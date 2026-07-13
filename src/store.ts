@@ -9,6 +9,13 @@ export interface Subtask {
   done: boolean;
 }
 
+export interface ActivityLog {
+  id: string;
+  time: string;
+  msg: string;
+  type: 'focus' | 'rest' | 'fire' | 'admin' | 'system';
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -42,6 +49,11 @@ interface AppState {
   tasks: Task[];
   shutterOpen: string | null;
   toasts: Toast[];
+  activityLogs: ActivityLog[];
+  gridLayout: '6x4' | '8x4' | '6x5';
+
+  setGridLayout: (layout: '6x4' | '8x4' | '6x5') => void;
+  logActivity: (msg: string, type: ActivityLog['type']) => void;
 
   addTile: (title: string, cat: TaskCategory, w: number, h: number) => void;
   archiveTask: (id: string) => void;
@@ -67,14 +79,14 @@ interface AppState {
   removeToast: (id: string) => void;
   isHoveringTask: boolean;
   setIsHoveringTask: (val: boolean) => void;
+  reorderTasks: (sourceId: string, targetId: string) => void;
 }
 
 const uid = () => Math.random().toString(36).slice(2, 9);
-const GRID_COLS = 6;
-const GRID_ROWS = 4;
-
-function applyTopology(tasks: Task[], mode: TopologyMode, focusedTaskId: string | null) {
+function applyTopology(tasks: Task[], mode: TopologyMode, focusedTaskId: string | null, gridLayout: string) {
   let newFocusedId = focusedTaskId;
+  const cols = gridLayout === '8x4' ? 8 : 6;
+  const rows = gridLayout === '6x5' ? 5 : 4;
   
   tasks.forEach(t => {
     t.parked = false;
@@ -83,7 +95,7 @@ function applyTopology(tasks: Task[], mode: TopologyMode, focusedTaskId: string 
       t.w = t.naturalW; t.h = t.naturalH;
     } else if (mode === 'deep') {
       if (t.id === newFocusedId) {
-        t.w = Math.min(4, GRID_COLS); t.h = Math.min(3, GRID_ROWS);
+        t.w = Math.min(4, cols); t.h = Math.min(3, rows);
       } else {
         t.w = 1; t.h = 1; t.parked = true;
       }
@@ -100,7 +112,7 @@ function applyTopology(tasks: Task[], mode: TopologyMode, focusedTaskId: string 
     if (candidate) { 
       newFocusedId = candidate.id; 
       // Re-run applyTopology with new focused ID
-      return applyTopology(tasks, mode, newFocusedId);
+      return applyTopology(tasks, mode, newFocusedId, gridLayout);
     }
   }
 
@@ -131,7 +143,7 @@ const initialTasks: Task[] = [
   { id: uid(), title: 'Holding Pen', cat: 'pen', w: 2, h: 1, naturalW: 2, naturalH: 1, type: 'pen', isPen: true, items: ['Slack: check w/ Dana re: staging creds'], completed: false },
 ];
 
-const { tasks: initializedTasks, newFocusedId: initialFocusId } = applyTopology(initialTasks, 'normal', null);
+const { tasks: initializedTasks, newFocusedId: initialFocusId } = applyTopology(initialTasks, 'normal', null, '6x4');
 
 export const useStore = create<AppState>((set, get) => ({
   mode: 'normal',
@@ -139,8 +151,28 @@ export const useStore = create<AppState>((set, get) => ({
   tasks: initializedTasks,
   shutterOpen: null,
   toasts: [],
+  gridLayout: '6x4',
+  activityLogs: [
+    { id: uid(), time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), msg: 'Workspace initialized', type: 'system' }
+  ],
   isHoveringTask: false,
   setIsHoveringTask: (val) => set({ isHoveringTask: val }),
+
+  setGridLayout: (layout) => set((state) => {
+    const unfinished = state.tasks.filter(t => !t.completed);
+    const result = applyTopology(unfinished, 'normal', null, layout);
+    return { gridLayout: layout, tasks: result.tasks, mode: 'normal', focusedTaskId: null };
+  }),
+
+  logActivity: (msg, type) => set((state) => {
+    const newLog = {
+      id: uid(),
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      msg,
+      type
+    };
+    return { activityLogs: [newLog, ...state.activityLogs] };
+  }),
 
   addToast: (msg, icon = '✓') => set((state) => ({
     toasts: [...state.toasts, { id: uid(), msg, icon }]
@@ -161,21 +193,27 @@ export const useStore = create<AppState>((set, get) => ({
     return { tasks: [...state.tasks, newTask] };
   }),
 
-  archiveTask: (id) => set((state) => ({
-    tasks: state.tasks.map(t => t.id === id ? { ...t, completed: true } : t)
-  })),
+  archiveTask: (id) => {
+    const task = get().tasks.find(t => t.id === id);
+    if (task) {
+      get().logActivity(`Archived "${task.title}"`, task.cat === 'focus' ? 'focus' : task.cat === 'fire' ? 'fire' : 'admin');
+    }
+    set((state) => ({
+      tasks: state.tasks.map(t => t.id === id ? { ...t, completed: true } : t)
+    }));
+  },
 
   changeTopology: (mode) => set((state) => {
     const nextTasks = JSON.parse(JSON.stringify(state.tasks));
     let nextFocusId = mode !== 'deep' ? null : state.focusedTaskId;
-    const result = applyTopology(nextTasks, mode, nextFocusId);
+    const result = applyTopology(nextTasks, mode, nextFocusId, state.gridLayout);
     return { mode, tasks: result.tasks, focusedTaskId: result.newFocusedId };
   }),
 
   setFocusedTask: (id) => set((state) => {
     if (state.mode !== 'deep') return {};
     const nextTasks = JSON.parse(JSON.stringify(state.tasks));
-    const result = applyTopology(nextTasks, 'deep', id);
+    const result = applyTopology(nextTasks, 'deep', id, state.gridLayout);
     return { tasks: result.tasks, focusedTaskId: id };
   }),
 
@@ -243,8 +281,10 @@ export const useStore = create<AppState>((set, get) => ({
     };
     
     if (timerFinished) {
-      // Trigger side effect for toast
-      setTimeout(() => get().addToast(`Timer done — "${finishedTitle}"`, '⏰'), 0);
+      setTimeout(() => {
+        get().addToast(`Timer done — "${finishedTitle}"`, '⏰');
+        get().logActivity(`Completed timer for "${finishedTitle}"`, 'focus');
+      }, 0);
     }
     
     return newState;
@@ -291,7 +331,20 @@ export const useStore = create<AppState>((set, get) => ({
 
   runDefrag: () => set((state) => {
     const unfinished = state.tasks.filter(t => !t.completed);
-    const result = applyTopology(unfinished, 'normal', null);
+    const result = applyTopology(unfinished, 'normal', null, state.gridLayout);
     return { tasks: result.tasks, mode: 'normal', focusedTaskId: null };
+  }),
+
+  reorderTasks: (sourceId, targetId) => set((state) => {
+    if (sourceId === targetId) return state;
+    const tasks = [...state.tasks];
+    const sourceIdx = tasks.findIndex(t => t.id === sourceId);
+    const targetIdx = tasks.findIndex(t => t.id === targetId);
+    if (sourceIdx === -1 || targetIdx === -1) return state;
+    
+    const [movedTask] = tasks.splice(sourceIdx, 1);
+    tasks.splice(targetIdx, 0, movedTask);
+    
+    return { tasks };
   })
 }));

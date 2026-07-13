@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useStore, type TaskCategory } from '../store';
 
-const TOTAL_CELLS = 24;
-
 export const NewTaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
-  const { addTile, tasks, addToast } = useStore();
+  const { addTile, tasks, addToast, gridLayout } = useStore();
+  const TOTAL_CELLS = gridLayout === '8x4' ? 32 : gridLayout === '6x5' ? 30 : 24;
   const [title, setTitle] = useState('');
   const [size, setSize] = useState({ w: 2, h: 2 });
   const [cat, setCat] = useState<TaskCategory>('focus');
@@ -28,7 +27,7 @@ export const NewTaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
 
     const occupiedCells = tasks.filter(t => !t.completed).reduce((sum, t) => sum + (t.parked ? 1 : t.w * t.h), 0);
     const need = size.w * size.h;
-    
+
     if (occupiedCells + need > TOTAL_CELLS) {
       addToast('Not enough grid space for that size', '⚠');
       return;
@@ -41,7 +40,7 @@ export const NewTaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
   return (
     <div className="fixed inset-0 bg-[#05070C]/60 backdrop-blur-[6px] z-[50] flex items-center justify-center" onClick={onClose}>
       <div className="w-[420px] bg-surface border border-line rounded-[18px] p-[22px] animate-tileIn" onClick={e => e.stopPropagation()}>
-        <h3 className="m-0 mb-4 font-display text-[15px]">New block</h3>
+        <h3 className="m-0 mb-4 font-display text-[15px]">New Task</h3>
         <div className="mb-3.5">
           <label className="text-[11px] text-muted block mb-1.5 font-mono tracking-[0.02em]">Title</label>
           <input
@@ -84,7 +83,7 @@ export const NewTaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
         </div>
         <div className="flex justify-end gap-2 mt-[18px]">
           <button className="border-none cursor-pointer font-sans font-medium text-[12.5px] py-[9px] px-[14px] rounded-[10px] transition-all duration-200 flex items-center gap-1.5 bg-surface text-muted border border-line hover:text-text hover:border-faint" onClick={onClose}>Cancel</button>
-          <button className="border-none cursor-pointer font-sans font-medium text-[12.5px] py-[9px] px-[14px] rounded-[10px] transition-all duration-200 flex items-center gap-1.5 bg-text text-void hover:-translate-y-px hover:shadow-[0_6px_16px_-4px_rgba(255,255,255,0.15)]" onClick={handleCreate}>Create block</button>
+          <button className="border-none cursor-pointer font-sans font-medium text-[12.5px] py-[9px] px-[14px] rounded-[10px] transition-all duration-200 flex items-center gap-1.5 bg-text text-void hover:-translate-y-px hover:shadow-[0_6px_16px_-4px_rgba(255,255,255,0.15)]" onClick={handleCreate}>Create Task</button>
         </div>
       </div>
     </div>

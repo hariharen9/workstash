@@ -1,14 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { useStore, type Task } from '../store';
 import { TileContent } from './TileContent';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
-const TOTAL_CELLS = 24;
+const DragIcon = () => (
+  <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+    <circle cx="4" cy="2" r="1.2" />
+    <circle cx="8" cy="2" r="1.2" />
+    <circle cx="4" cy="6" r="1.2" />
+    <circle cx="8" cy="6" r="1.2" />
+    <circle cx="4" cy="10" r="1.2" />
+    <circle cx="8" cy="10" r="1.2" />
+  </svg>
+);
 
 export const Tile: React.FC<{ task: Task }> = ({ task }) => {
-  const { archiveTask, openShutter, setTileSize, tasks, mode, setFocusedTask, addToast, setIsHoveringTask } = useStore();
+  const { archiveTask, openShutter, setTileSize, tasks, mode, setFocusedTask, addToast, setIsHoveringTask, gridLayout } = useStore();
+  
+  const TOTAL_CELLS = gridLayout === '8x4' ? 32 : gridLayout === '6x5' ? 30 : 24;
+
   const [isCompleting, setIsCompleting] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isEntering, setIsEntering] = useState(true);
+
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
 
   useEffect(() => {
     // Remove the entering class after the animation finishes
@@ -81,23 +97,37 @@ export const Tile: React.FC<{ task: Task }> = ({ task }) => {
     ? { background: 'repeating-linear-gradient(135deg, #121826, #121826 10px, rgba(255,255,255,0.01) 10px, rgba(255,255,255,0.01) 20px)' }
     : {};
 
+  const style = {
+    gridColumn: `span ${task.w}`,
+    gridRow: `span ${task.h}`,
+    ...penBg,
+    transform: CSS.Transform.toString(transform),
+    transition: transition || 'opacity 0.45s cubic-bezier(0.3, 0.9, 0.3, 1), transform 0.45s cubic-bezier(0.3, 0.9, 0.3, 1)',
+    zIndex: isDragging ? 50 : 1,
+  };
+
   return (
     <div
-      className={`relative rounded-radius bg-surface border border-line p-[14px_16px] overflow-hidden flex flex-col cursor-default transition-all duration-450 ease-custom-grid min-h-0 hover:border-faint ${catClass} ${
+      ref={setNodeRef}
+      className={`relative rounded-radius bg-surface border border-line p-[14px_16px] overflow-hidden flex flex-col transition-[background,border,box-shadow,opacity] duration-300 min-h-0 hover:border-faint ${catClass} ${
         task.parked ? 'opacity-[0.32] saturate-[0.4]' : ''
-      } ${isCompleting ? 'animate-completePop' : ''} ${isEntering ? 'animate-tileIn' : ''}`}
-      style={{ gridColumn: `span ${task.w}`, gridRow: `span ${task.h}`, ...penBg }}
+      } ${isCompleting ? 'animate-completePop' : ''} ${isEntering ? 'animate-tileIn' : ''} ${isDragging ? 'opacity-50 ring-2 ring-violet shadow-xl scale-[1.02]' : ''}`}
+      style={style}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onDoubleClick={handleDoubleClick}
     >
       {task.isPen ? (
-        <TileContent task={task} />
+        <>
+          <div {...attributes} {...listeners} className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center cursor-grab text-muted hover:text-text z-10" title="Drag to reorder"><DragIcon /></div>
+          <TileContent task={task} />
+        </>
       ) : (
         <>
           <div className="flex items-start justify-between gap-2">
             <p className="font-display font-semibold text-[13.5px] leading-1.3 tracking-[-0.01em] m-0 break-words">{task.title}</p>
             <div className="flex items-center gap-1.5 shrink-0">
+              <div {...attributes} {...listeners} className="w-5 h-5 rounded-[6px] grid place-items-center cursor-grab text-muted hover:bg-elevated hover:text-text transition-colors" title="Drag to reorder"><DragIcon /></div>
               <button className="w-5 h-5 rounded-[6px] border-none bg-transparent text-muted cursor-pointer grid place-items-center text-sm transition-colors duration-150 shrink-0 hover:bg-elevated hover:text-text" title="Focus Shutter (F)" onClick={(e) => { e.stopPropagation(); openShutter(task.id); }}>⤢</button>
               <button className="w-5 h-5 rounded-[6px] border-none bg-transparent text-muted cursor-pointer grid place-items-center text-sm transition-colors duration-150 shrink-0 hover:bg-elevated hover:text-text" title="Archive" onClick={handleArchive}>✕</button>
             </div>

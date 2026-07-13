@@ -60,17 +60,18 @@
   html, body {
     margin: 0;
     padding: 0;
-    height: 100%;
     background-color: var(--color-void);
     color: var(--color-text);
     font-family: var(--font-sans);
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scroll-snap-type: y mandatory;
   }
 
   #root {
-    height: 100vh;
     display: flex;
     flex-direction: column;
+    min-height: 100vh;
   }
 
   ::-webkit-scrollbar {
