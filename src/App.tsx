@@ -39,7 +39,7 @@ const ToastContainer: React.FC = () => {
   const { toasts, removeToast } = useStore();
   
   return (
-    <div id="toast">
+    <div className="fixed bottom-6 right-6 z-[60] flex flex-col gap-2">
       {toasts.map(t => (
         <ToastItem key={t.id} toast={t} onRemove={() => removeToast(t.id)} />
       ))}
@@ -60,8 +60,9 @@ const ToastItem: React.FC<{ toast: { id: string, msg: string, icon: string }, on
 
   return (
     <div 
-      className="toast-item" 
-      style={isRemoving ? { opacity: 0, transform: 'translateY(8px)', transition: 'opacity .4s, transform .4s' } : {}}
+      className={`bg-elevated-hi border border-line p-[12px_16px] rounded-[11px] text-[12.5px] max-w-[320px] animate-toastIn shadow-toast flex items-center gap-2.5 ${
+        isRemoving ? 'opacity-0 translate-y-2 transition-[opacity,transform] duration-400' : ''
+      }`}
     >
       <span>{toast.icon}</span>
       <span>{toast.msg}</span>

@@ -82,7 +82,6 @@ function applyTopology(tasks: Task[], mode: TopologyMode, focusedTaskId: string 
     if (mode === 'normal') {
       t.w = t.naturalW; t.h = t.naturalH;
     } else if (mode === 'deep') {
-      const isFocus = t.id === newFocusedId || (!newFocusedId && t.cat === 'focus' && !t._deepPicked);
       if (t.id === newFocusedId) {
         t.w = Math.min(4, GRID_COLS); t.h = Math.min(3, GRID_ROWS);
       } else {

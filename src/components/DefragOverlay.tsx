@@ -43,11 +43,11 @@ export const DefragOverlay: React.FC<{
   }, [isDefragging, tasks, runDefrag, onComplete]);
 
   return (
-    <div id="defrag-overlay" className={isDefragging ? 'show' : ''}>
-      <div className="defrag-title">Defragmenting workspace…</div>
-      <div className="defrag-sub">{subText}</div>
-      <div className="defrag-bar">
-        <div className="defrag-bar-fill" style={{ width: `${progress}%` }}></div>
+    <div className={`fixed inset-0 z-[55] bg-void hidden items-center justify-center flex-col gap-[18px] ${isDefragging ? '!flex' : ''}`}>
+      <div className="font-display text-[22px] font-semibold">Defragmenting workspace…</div>
+      <div className="text-muted text-[13px] font-mono">{subText}</div>
+      <div className="w-[280px] h-1 bg-elevated rounded-[3px] overflow-hidden">
+        <div className="h-full bg-gradient-to-r from-violet to-teal transition-[width] duration-[1400ms] ease-custom-defrag" style={{ width: `${progress}%` }}></div>
       </div>
     </div>
   );

@@ -26,24 +26,25 @@ export const TileContent: React.FC<{ task: Task }> = ({ task }) => {
   if (task.isPen) {
     return (
       <>
-        <div className="tile-head">
-          <p className="tile-title">Holding Pen</p>
-          <span className="cat-badge pen">INBOX</span>
+        <div className="flex items-start justify-between gap-2">
+          <p className="font-display font-semibold text-[13.5px] leading-1.3 tracking-[-0.01em] m-0 break-words">Holding Pen</p>
+          <span className="text-[9px] font-mono p-[2px_6px] rounded-[5px] tracking-[0.03em] bg-faint text-text">INBOX</span>
         </div>
-        <div className="tile-body" style={{ display: 'flex', flexDirection: 'column' }}>
+        <div className="flex-1 min-h-0 mt-2 flex flex-col">
           {task.items && task.items.length > 0 ? (
             task.items.map((item, i) => (
-              <div key={i} className="pen-item">
+              <div key={i} className="flex items-center gap-[7px] text-[11.5px] bg-elevated p-[6px_8px] rounded-[7px] mb-[5px]">
                 <span>📥</span><span style={{ flex: 1 }}>{item}</span>
-                <button className="icon-btn" onClick={() => removePenItem(task.id, i)} style={{ width: '16px', height: '16px', fontSize: '10px' }}>✕</button>
+                <button className="w-4 h-4 rounded-[5px] border-none bg-transparent text-muted cursor-pointer grid place-items-center text-[10px] transition-colors duration-150 shrink-0 hover:bg-elevated-hi hover:text-text" onClick={() => removePenItem(task.id, i)}>✕</button>
               </div>
             ))
           ) : (
-            <div className="pen-empty">interruptions land here —<br />not on the grid</div>
+            <div className="text-faint text-[11.5px] font-mono m-auto text-center">interruptions land here —<br />not on the grid</div>
           )}
         </div>
-        <div className="add-subtask">
+        <div className="flex gap-[6px] mt-[6px]">
           <input
+            className="flex-1 bg-elevated border border-line text-text text-[11.5px] p-[6px_8px] rounded-[7px] outline-none font-sans focus:border-faint"
             type="text"
             placeholder="+ capture a stray thought…"
             ref={penInputRef}
@@ -63,30 +64,45 @@ export const TileContent: React.FC<{ task: Task }> = ({ task }) => {
 
   if (area <= 1) {
     return (
-      <div className="micro-row">
-        <div className="checkbox" onClick={() => archiveTask(task.id)}></div>
-        <span style={{ fontSize: '11.5px', color: 'var(--muted)', flex: 1 }}>tap to complete</span>
+      <div className="flex items-center gap-2 flex-1">
+        <div 
+          className="w-4 h-4 rounded-[5px] border-[1.5px] border-faint shrink-0 cursor-pointer grid place-items-center transition-all duration-150 hover:bg-teal hover:border-teal" 
+          onClick={() => archiveTask(task.id)}
+        ></div>
+        <span className="text-[11.5px] text-muted flex-1">tap to complete</span>
       </div>
     );
   }
 
   const renderSubtasks = () => (
     <>
-      <div className="subtask-list">
+      <div className="flex flex-col gap-[5px] overflow-y-auto flex-1 pr-[2px]">
         {task.subtasks && task.subtasks.length > 0 ? (
           task.subtasks.map(s => (
-            <div key={s.id} className={`subtask-row ${s.done ? 'done' : ''}`}>
-              <div className={`checkbox ${s.done ? 'checked' : ''}`} onClick={() => toggleSubtask(task.id, s.id)}></div>
-              <span className="subtask-text">{s.text}</span>
-              <button className="icon-btn" onClick={() => removeSubtask(task.id, s.id)} style={{ width: '16px', height: '16px', fontSize: '10px' }}>✕</button>
+            <div key={s.id} className="flex items-center gap-[7px] text-xs text-text">
+              <div 
+                className={`w-4 h-4 rounded-[5px] border-[1.5px] shrink-0 cursor-pointer grid place-items-center transition-all duration-150 ${
+                  s.done ? 'bg-teal border-teal' : 'border-faint'
+                }`} 
+                onClick={() => toggleSubtask(task.id, s.id)}
+              >
+                {s.done && (
+                  <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="#0A0D14" strokeWidth="4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </div>
+              <span className={`flex-1 ${s.done ? 'text-faint line-through' : ''}`}>{s.text}</span>
+              <button className="w-4 h-4 rounded-[5px] border-none bg-transparent text-muted cursor-pointer grid place-items-center text-[10px] transition-colors duration-150 shrink-0 hover:bg-elevated hover:text-text" onClick={() => removeSubtask(task.id, s.id)}>✕</button>
             </div>
           ))
         ) : (
-          <div style={{ color: 'var(--faint)', fontSize: '11px', fontFamily: 'JetBrains Mono' }}>no subtasks yet</div>
+          <div className="text-faint text-[11px] font-mono">no subtasks yet</div>
         )}
       </div>
-      <div className="add-subtask">
+      <div className="flex gap-[6px] mt-[6px]">
         <input
+          className="flex-1 bg-elevated border border-line text-text text-[11.5px] p-[6px_8px] rounded-[7px] outline-none font-sans focus:border-faint"
           type="text"
           placeholder="+ add subtask, press Enter"
           ref={subtaskInputRef}
@@ -108,16 +124,16 @@ export const TileContent: React.FC<{ task: Task }> = ({ task }) => {
   // 2x2 or 3x2 (tabbed workspace)
   return (
     <>
-      <div className="tabs">
-        <button className={`tab-btn ${task.tab === 'notes' ? 'active' : ''}`} onClick={() => setTab(task.id, 'notes')}>Scratchpad</button>
-        <button className={`tab-btn ${task.tab === 'subtasks' ? 'active' : ''}`} onClick={() => setTab(task.id, 'subtasks')}>Subtasks</button>
-        <button className={`tab-btn ${task.tab === 'timer' ? 'active' : ''}`} onClick={() => setTab(task.id, 'timer')}>Timer</button>
-        <button className={`tab-btn ${task.tab === 'energy' ? 'active' : ''}`} onClick={() => setTab(task.id, 'energy')}>Energy</button>
+      <div className="flex gap-1 mb-2">
+        <button className={`text-[10.5px] p-[5px_9px] rounded-[6px] border-none bg-transparent text-muted cursor-pointer font-sans font-medium ${task.tab === 'notes' ? 'bg-elevated text-text' : ''}`} onClick={() => setTab(task.id, 'notes')}>Scratchpad</button>
+        <button className={`text-[10.5px] p-[5px_9px] rounded-[6px] border-none bg-transparent text-muted cursor-pointer font-sans font-medium ${task.tab === 'subtasks' ? 'bg-elevated text-text' : ''}`} onClick={() => setTab(task.id, 'subtasks')}>Subtasks</button>
+        <button className={`text-[10.5px] p-[5px_9px] rounded-[6px] border-none bg-transparent text-muted cursor-pointer font-sans font-medium ${task.tab === 'timer' ? 'bg-elevated text-text' : ''}`} onClick={() => setTab(task.id, 'timer')}>Timer</button>
+        <button className={`text-[10.5px] p-[5px_9px] rounded-[6px] border-none bg-transparent text-muted cursor-pointer font-sans font-medium ${task.tab === 'energy' ? 'bg-elevated text-text' : ''}`} onClick={() => setTab(task.id, 'energy')}>Energy</button>
       </div>
-      <div className="tab-panel">
+      <div className="flex-1 min-h-0 flex flex-col">
         {task.tab === 'notes' && (
           <textarea
-            className="scratchpad"
+            className="flex-1 bg-elevated border border-line rounded-[9px] p-[8px_9px] font-mono text-[11px] text-[#B8E6D5] resize-none outline-none w-full leading-normal placeholder-faint focus:border-teal"
             placeholder="// scratch notes, error logs, stray thoughts…"
             value={task.notes || ''}
             onChange={(e) => updateNotes(task.id, e.target.value)}
@@ -126,34 +142,36 @@ export const TileContent: React.FC<{ task: Task }> = ({ task }) => {
         {task.tab === 'subtasks' && renderSubtasks()}
         {task.tab === 'timer' && task.timer && (
           <>
-            <div className="timer-block">
-              <div className="timer-display mono">{fmtTime(task.timer.remaining)}</div>
-              <div className="timer-controls">
-                <button onClick={() => setTimerRunning(task.id, !task.timer!.running)}>{task.timer.running ? '⏸' : '▶'}</button>
-                <button onClick={() => resetTimer(task.id)}>↺</button>
-                <button onClick={() => adjustTimer(task.id, -300)}>-5m</button>
-                <button onClick={() => adjustTimer(task.id, 300)}>+5m</button>
+            <div className="flex items-center gap-[10px]">
+              <div className="font-mono text-xl font-medium tracking-[0.02em]">{fmtTime(task.timer.remaining)}</div>
+              <div className="flex gap-[5px]">
+                <button className="w-6 h-6 rounded-[7px] border border-line bg-elevated text-text cursor-pointer text-[11px] grid place-items-center hover:bg-elevated-hi" onClick={() => setTimerRunning(task.id, !task.timer!.running)}>{task.timer.running ? '⏸' : '▶'}</button>
+                <button className="w-6 h-6 rounded-[7px] border border-line bg-elevated text-text cursor-pointer text-[11px] grid place-items-center hover:bg-elevated-hi" onClick={() => resetTimer(task.id)}>↺</button>
+                <button className="w-6 h-6 rounded-[7px] border border-line bg-elevated text-text cursor-pointer text-[11px] grid place-items-center hover:bg-elevated-hi" onClick={() => adjustTimer(task.id, -300)}>-5m</button>
+                <button className="w-6 h-6 rounded-[7px] border border-line bg-elevated text-text cursor-pointer text-[11px] grid place-items-center hover:bg-elevated-hi" onClick={() => adjustTimer(task.id, 300)}>+5m</button>
               </div>
             </div>
-            <div style={{ marginTop: '10px', height: '3px', background: 'var(--elevated)', borderRadius: '2px', overflow: 'hidden' }}>
-              <div style={{ height: '100%', background: 'var(--violet)', width: `${(1 - task.timer.remaining / task.timer.total) * 100}%`, transition: 'width 1s linear' }}></div>
+            <div className="mt-2.5 h-[3px] bg-elevated rounded-[2px] overflow-hidden">
+              <div className="h-full bg-violet transition-[width] duration-1000 ease-linear" style={{ width: `${(1 - task.timer.remaining / task.timer.total) * 100}%` }}></div>
             </div>
           </>
         )}
         {task.tab === 'energy' && (
           <>
-            <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '8px' }}>cognitive energy budget for this block</div>
-            <div className="energy-bars">
+            <div className="text-[11px] text-muted mb-2">cognitive energy budget for this block</div>
+            <div className="flex gap-[3px] items-end h-[26px] flex-1">
               {[1, 2, 3, 4, 5].map(i => (
                 <div
                   key={i}
-                  className={`energy-bar ${i <= (task.energy || 3) ? 'filled' : ''}`}
+                  className={`flex-1 rounded-[3px_3px_0_0] bg-elevated cursor-pointer transition-colors duration-200 ${
+                    i <= (task.energy || 3) ? 'bg-violet' : ''
+                  }`}
                   style={{ height: `${8 + i * 3.5}px` }}
                   onClick={() => setEnergy(task.id, i)}
                 ></div>
               ))}
             </div>
-            <div className="progress-text" style={{ marginTop: '6px' }}>{task.energy || 3}/5 units allocated</div>
+            <div className="font-mono text-[10.5px] text-muted mt-1.5">{task.energy || 3}/5 units allocated</div>
           </>
         )}
       </div>
