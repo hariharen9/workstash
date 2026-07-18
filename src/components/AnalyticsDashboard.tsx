@@ -1,5 +1,6 @@
 import React from 'react';
 import { useStore } from '../store';
+import { GlowCard } from './GlowCard';
 
 const Heatmap = () => {
   const days = Array.from({ length: 56 }, (_, i) => {
@@ -17,7 +18,7 @@ const Heatmap = () => {
         <h3 className="text-xs font-mono tracking-widest text-muted uppercase">Cognitive Focus Map</h3>
         <span className="text-xs font-mono text-violet">32 Pomodoros</span>
       </div>
-      <div className="p-4 bg-surface border border-line rounded-2xl flex justify-center overflow-hidden h-40 items-center">
+      <GlowCard customSize glowColor="purple" className="p-4 bg-surface rounded-2xl flex justify-center overflow-hidden h-40 items-center">
         <div className="grid grid-flow-col grid-rows-7 gap-1">
           {days.map(d => {
             let bgClass = 'bg-elevated';
@@ -37,7 +38,7 @@ const Heatmap = () => {
             );
           })}
         </div>
-      </div>
+      </GlowCard>
     </div>
   );
 };
@@ -46,7 +47,7 @@ const EnergyChart = () => {
   return (
     <div className="flex flex-col gap-2">
       <h3 className="text-xs font-mono tracking-widest text-muted uppercase">Energy Allocation</h3>
-      <div className="p-5 bg-surface border border-line rounded-2xl flex items-center justify-between h-40">
+      <GlowCard customSize glowColor="blue" className="p-5 bg-surface rounded-2xl flex items-center justify-between h-40">
         {/* CSS Donut Chart */}
         <div 
           className="w-24 h-24 rounded-full relative shrink-0 flex items-center justify-center" 
@@ -73,7 +74,7 @@ const EnergyChart = () => {
             <span className="font-mono text-text">15%</span>
           </div>
         </div>
-      </div>
+      </GlowCard>
     </div>
   );
 };
@@ -87,9 +88,9 @@ const PomodoroWidget = () => {
     return (
       <div className="flex flex-col gap-2">
         <h3 className="text-xs font-mono tracking-widest text-muted uppercase">Global Timer</h3>
-        <div className="p-5 bg-surface border border-line rounded-2xl flex items-center justify-center h-48 text-muted text-sm font-mono">
+        <GlowCard customSize glowColor="orange" className="p-5 bg-surface rounded-2xl flex items-center justify-center h-48 text-muted text-sm font-mono">
           [ No active timers ]
-        </div>
+        </GlowCard>
       </div>
     );
   }
@@ -101,7 +102,7 @@ const PomodoroWidget = () => {
   return (
     <div className="flex flex-col gap-2">
       <h3 className="text-xs font-mono tracking-widest text-muted uppercase">Global Timer</h3>
-      <div className="p-5 bg-surface border border-line rounded-2xl flex flex-col items-center justify-center h-48 relative overflow-hidden group">
+      <GlowCard customSize glowColor="orange" className="p-5 bg-surface rounded-2xl flex flex-col items-center justify-center h-48 relative overflow-hidden group">
         <div className="absolute inset-y-0 left-0 bg-violet/[0.08] transition-all duration-1000 ease-linear" style={{ width: `${progress}%` }} />
         
         <div className="relative z-10 flex flex-col items-center gap-1 w-full px-4">
@@ -117,7 +118,7 @@ const PomodoroWidget = () => {
             {activeTask.timer.running ? 'Pause' : 'Start'}
           </button>
         </div>
-      </div>
+      </GlowCard>
     </div>
   );
 };
@@ -128,8 +129,10 @@ const ActivityLog = () => {
   return (
     <div className="flex flex-col gap-2">
       <h3 className="text-xs font-mono tracking-widest text-muted uppercase">Activity Log</h3>
-      <div 
-        className="p-5 bg-surface border border-line rounded-2xl flex flex-col gap-5 h-48 overflow-y-auto"
+      <GlowCard 
+        customSize 
+        glowColor="green"
+        className="p-5 bg-surface rounded-2xl flex flex-col gap-5 h-48 overflow-y-auto"
         data-lenis-prevent="true"
       >
         {activityLogs.length === 0 && <div className="text-muted text-sm italic">No telemetry data.</div>}
@@ -151,14 +154,14 @@ const ActivityLog = () => {
             </div>
           );
         })}
-      </div>
+      </GlowCard>
     </div>
   );
 };
 
 export const AnalyticsDashboard: React.FC = () => {
   return (
-    <section className="min-h-screen w-full snap-start shrink-0 flex flex-col p-8 md:p-12 bg-gradient-to-b from-white/[0.02] to-void border-t border-white/[0.05] shadow-[inset_0_1px_0_rgba(0,0,0,0.4)] relative z-0">
+    <section className="min-h-screen w-full snap-start shrink-0 flex flex-col p-8 md:p-12 bg-void relative z-0">
       <div className="max-w-4xl w-full mx-auto flex flex-col gap-8 mt-4 md:mt-12">
         <header className="flex items-baseline justify-between border-b border-line pb-4">
           <h2 className="font-display text-2xl md:text-3xl font-semibold tracking-tight">Workspace Analytics</h2>

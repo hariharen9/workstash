@@ -1,5 +1,6 @@
 import React from 'react';
 import { useStore, type TopologyMode } from '../store';
+import { GlowCard } from './GlowCard';
 
 export const Header: React.FC<{ onNewTask: () => void; onDefrag: () => void; onOpenSettings: () => void }> = ({ onNewTask, onDefrag, onOpenSettings }) => {
   const { mode, changeTopology, tasks, addToast, gridLayout } = useStore();
@@ -21,7 +22,13 @@ export const Header: React.FC<{ onNewTask: () => void; onDefrag: () => void; onO
   };
 
   return (
-    <header className="flex items-center justify-between p-[16px_22px] border-b border-line shrink-0 bg-gradient-to-b from-surface to-void">
+    <GlowCard 
+      as="header" 
+      customSize 
+      glowColor="purple" 
+      className="w-full rounded-t-none rounded-b-2xl flex items-center justify-between p-[16px_22px] shrink-0 bg-surface/80"
+      style={{ border: 'none', borderBottom: '1px solid var(--line)', zIndex: 40 }}
+    >
       <div className="flex items-center gap-2.5">
         <div className="w-[26px] h-[26px] rounded-[7px] bg-[conic-gradient(from_220deg,theme(colors.violet),theme(colors.teal),theme(colors.amber),theme(colors.violet))] grid place-items-center shadow-brand">
           <span className="w-2.5 h-2.5 rounded-[3px] bg-void"></span>
@@ -66,6 +73,6 @@ export const Header: React.FC<{ onNewTask: () => void; onDefrag: () => void; onO
           ⚙
         </button>
       </div>
-    </header>
+    </GlowCard>
   );
 };

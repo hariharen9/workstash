@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useStore, type Task } from '../store';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
+import { GlowCard } from './GlowCard';
 
 export const DefragOverlay: React.FC<{
   isDefragging: boolean;
@@ -71,9 +72,11 @@ export const DefragOverlay: React.FC<{
       </div>
       
       {/* Micro Grid Visualization */}
-      <div 
+      <GlowCard 
+        customSize 
+        glowColor="blue"
         ref={parent} 
-        className="grid grid-cols-6 grid-rows-4 grid-flow-dense gap-2 p-3 bg-surface border border-line rounded-xl w-[400px] h-[280px]"
+        className="grid grid-cols-6 grid-rows-4 grid-flow-dense gap-2 p-3 bg-surface rounded-xl w-[400px] h-[280px]"
       >
         {localTasks.map(t => {
           const isRemoving = highlightCompleted && t.completed;
@@ -90,7 +93,7 @@ export const DefragOverlay: React.FC<{
             />
           );
         })}
-      </div>
+      </GlowCard>
     </div>
   );
 };

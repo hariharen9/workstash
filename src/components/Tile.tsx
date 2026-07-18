@@ -15,6 +15,8 @@ const DragIcon = () => (
   </svg>
 );
 
+import { GlowCard } from './GlowCard';
+
 export const Tile: React.FC<{ task: Task }> = ({ task }) => {
   const { archiveTask, openShutter, setTileSize, tasks, mode, setFocusedTask, addToast, setIsHoveringTask, gridLayout } = useStore();
   
@@ -93,6 +95,13 @@ export const Tile: React.FC<{ task: Task }> = ({ task }) => {
     ? 'shadow-admin-cat'
     : '';
 
+  const glowColorMap = {
+    focus: 'purple',
+    fire: 'orange',
+    admin: 'green',
+    pen: 'blue'
+  } as const;
+
   const penBg = task.isPen
     ? { background: 'repeating-linear-gradient(135deg, #121826, #121826 10px, rgba(255,255,255,0.01) 10px, rgba(255,255,255,0.01) 20px)' }
     : {};
@@ -107,9 +116,11 @@ export const Tile: React.FC<{ task: Task }> = ({ task }) => {
   };
 
   return (
-    <div
+    <GlowCard
       ref={setNodeRef}
-      className={`relative rounded-radius bg-surface border border-line p-[14px_16px] overflow-hidden flex flex-col transition-[background,border,box-shadow,opacity] duration-300 min-h-0 hover:border-faint ${catClass} ${
+      customSize={true}
+      glowColor={glowColorMap[task.cat as keyof typeof glowColorMap] || 'blue'}
+      className={`bg-surface p-[14px_16px] overflow-hidden flex flex-col transition-[background,border,box-shadow,opacity] duration-300 min-h-0 ${catClass} ${
         task.parked ? 'opacity-[0.32] saturate-[0.4]' : ''
       } ${isCompleting ? 'animate-completePop' : ''} ${isEntering ? 'animate-tileIn' : ''} ${isDragging ? 'opacity-50 ring-2 ring-violet shadow-xl scale-[1.02]' : ''}`}
       style={style}
@@ -155,6 +166,6 @@ export const Tile: React.FC<{ task: Task }> = ({ task }) => {
           </div>
         </>
       )}
-    </div>
+    </GlowCard>
   );
 };
