@@ -1,12 +1,24 @@
-import React, { useRef, useState } from 'react';
-import { useStore } from '../store';
+import React, { useRef, useState, useEffect } from 'react';
+import { useStore, occupiedCells } from '../store';
 import { GlowCard } from './GlowCard';
 
 export const HoldingPenDock: React.FC = () => {
-  const { tasks, addPenItem, removePenItem, promotePenItem } = useStore();
+  const { tasks, gridLayout, addPenItem, removePenItem, promotePenItem } = useStore();
   const pen = tasks.find(t => t.isPen && !t.completed);
   const inputRef = useRef<HTMLInputElement>(null);
   const [expanded, setExpanded] = useState(true);
+
+  const TOTAL_CELLS = gridLayout === '8x4' ? 32 : gridLayout === '6x5' ? 30 : 24;
+  const used = occupiedCells(tasks);
+  const isFull = used >= TOTAL_CELLS;
+  const prevIsFull = useRef(isFull);
+
+  useEffect(() => {
+    if (isFull && !prevIsFull.current) {
+      setExpanded(false);
+    }
+    prevIsFull.current = isFull;
+  }, [isFull]);
 
   if (!pen) return null;
 

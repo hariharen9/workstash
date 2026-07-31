@@ -8,23 +8,27 @@ import { DefragOverlay } from './components/DefragOverlay';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { SettingsModal } from './components/SettingsModal';
 import { HelpModal } from './components/HelpModal';
+import { ArchiveModal } from './components/ArchiveModal';
+import { ActiveTimerWidget } from './components/ActiveTimerWidget';
 import { useStore } from './store';
 
 function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [isArchiveOpen, setIsArchiveOpen] = useState(false);
   const [isDefragging, setIsDefragging] = useState(false);
   const { runDefrag } = useStore();
 
   useEffect(() => {
     const lenis = new Lenis({
-      duration: 1.2,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      duration: 0.9,
+      easing: (t) => t === 1 ? 1 : 1 - Math.pow(2, -10 * t), // expo out — fast start, soft stop
       orientation: 'vertical',
       gestureOrientation: 'vertical',
       smoothWheel: true,
-      wheelMultiplier: 1,
+      wheelMultiplier: 0.9,
+      touchMultiplier: 1.5,
     });
 
     function raf(time: number) {
@@ -45,12 +49,13 @@ function App() {
 
   return (
     <>
-      <section className="h-screen w-full flex flex-col snap-start shrink-0 relative z-10 bg-void">
+      <section className="h-screen w-full flex flex-col shrink-0 relative z-10 bg-void">
         <Header
           onNewTask={() => setIsModalOpen(true)}
           onDefrag={() => setIsDefragging(true)}
           onOpenSettings={() => setIsSettingsOpen(true)}
           onOpenHelp={() => setIsHelpOpen(true)}
+          onOpenArchive={() => setIsArchiveOpen(true)}
         />
         <BentoGrid onNewTask={() => setIsModalOpen(true)} />
       </section>
@@ -74,10 +79,17 @@ function App() {
         onClose={() => setIsHelpOpen(false)}
       />
 
+      <ArchiveModal
+        isOpen={isArchiveOpen}
+        onClose={() => setIsArchiveOpen(false)}
+      />
+
       <DefragOverlay
         isDefragging={isDefragging}
         onComplete={handleDefragComplete}
       />
+
+      <ActiveTimerWidget />
 
       <ToastContainer />
     </>

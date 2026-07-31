@@ -102,7 +102,7 @@ export const FocusShutter: React.FC = () => {
               {task.cat === 'admin' && <span className="font-mono text-[0.6875rem] font-semibold px-2.5 py-1 rounded-md tracking-[0.04em] uppercase bg-teal-dim text-teal shrink-0">Quick Admin</span>}
             </div>
             <div className="flex-1 min-h-0 mt-5 flex flex-col">
-              <TileContent task={proxyTask} />
+              <TileContent task={proxyTask} disableTick />
             </div>
           </div>
         </div>

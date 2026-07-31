@@ -45,15 +45,17 @@ export const BentoGrid: React.FC<{ onNewTask: () => void }> = ({ onNewTask }) =>
               {gridTasks.map(t => (
                 <Tile key={t.id} task={t} />
               ))}
-              <button
-                type="button"
-                className="col-span-1 row-span-1 rounded-radius border border-dashed border-line flex flex-col items-center justify-center gap-1 cursor-pointer text-faint transition-all duration-200 hover:border-faint hover:text-muted hover:bg-surface/60"
-                title="Add a block"
-                onClick={onNewTask}
-              >
-                <span className="text-[1.5rem] font-light leading-none">+</span>
-                <span className="text-[0.7rem] font-medium tracking-wide">Add</span>
-              </button>
+              {!isFull && (
+                <button
+                  type="button"
+                  className="col-span-1 row-span-1 rounded-radius border border-dashed border-line flex flex-col items-center justify-center gap-1 cursor-pointer text-faint transition-all duration-200 hover:border-faint hover:text-muted hover:bg-surface/60"
+                  title="Add a block"
+                  onClick={onNewTask}
+                >
+                  <span className="text-[1.5rem] font-light leading-none">+</span>
+                  <span className="text-[0.7rem] font-medium tracking-wide">Add</span>
+                </button>
+              )}
             </div>
           </SortableContext>
         </DndContext>

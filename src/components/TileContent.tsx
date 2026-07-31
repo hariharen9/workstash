@@ -8,13 +8,14 @@ const CheckIcon = () => (
   </svg>
 );
 
-export const TileContent: React.FC<{ task: Task }> = ({ task }) => {
+export const TileContent: React.FC<{ task: Task; disableTick?: boolean }> = ({ task, disableTick = false }) => {
   const { setTab, updateNotes, toggleSubtask, removeSubtask, addSubtask, tickTimer, setEnergy } = useStore();
   const subtaskInputRef = useRef<HTMLInputElement>(null);
   const listAddInputRef = useRef<HTMLInputElement>(null);
   const [listAdding, setListAdding] = useState(false);
 
   useEffect(() => {
+    if (disableTick) return;
     let interval: ReturnType<typeof setInterval>;
     if (task.timer?.running) {
       interval = setInterval(() => {
@@ -22,7 +23,7 @@ export const TileContent: React.FC<{ task: Task }> = ({ task }) => {
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [task.timer?.running, task.id, tickTimer]);
+  }, [task.timer?.running, task.id, tickTimer, disableTick]);
 
   useEffect(() => {
     if (listAdding) listAddInputRef.current?.focus();

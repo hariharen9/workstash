@@ -174,23 +174,8 @@ export const TimerControls: React.FC<TimerControlsProps> = ({ task, compact = fa
     );
   }
 
-  const isCompactOrMinimal = compact || minimal;
-
   return (
-    <div className={`flex flex-col ${isCompactOrMinimal ? 'gap-2' : 'gap-3.5'} w-full`}>
-      {minimal && isExpanded && (
-        <div className="flex items-center justify-between border-b border-line/50 pb-1.5 mb-0.5">
-          <span className="text-[0.7rem] font-semibold tracking-[0.04em] uppercase text-violet">Timer Widget</span>
-          <button
-            type="button"
-            className="tile-action !w-5 !h-5 !text-[0.7rem]"
-            onClick={() => setIsExpanded(false)}
-            title="Collapse timer bar"
-          >
-            ✕
-          </button>
-        </div>
-      )}
+    <div className={`flex flex-col ${compact ? 'gap-2' : 'gap-3.5'} w-full`}>
       <div className={`flex items-end justify-between gap-3 flex-wrap ${compact ? '' : ''}`}>
         <div>
           <div className={`font-display font-semibold tabular-nums tracking-tight leading-none ${compact ? 'text-[1.25rem]' : 'text-[2rem] tracking-[-0.03em]'}`}>

@@ -51,7 +51,7 @@ export const NewTaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
   };
 
   return (
-    <div className="fixed inset-0 bg-[#05070C]/70 backdrop-blur-md z-[50] flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-[#05070C]/70 backdrop-blur-md z-[50] flex items-center justify-center p-4" onClick={onClose} data-lenis-prevent="true">
       <GlowCard customSize glowColor="blue" className="w-full max-w-[440px] bg-surface rounded-2xl p-6 animate-tileIn shadow-toast" onClick={e => e.stopPropagation()}>
         <h3 className="m-0 mb-1 font-display text-[1.2rem] font-semibold tracking-[-0.03em]">New Task</h3>
         <p className="m-0 mb-5 text-[0.8125rem] text-muted">Size is cognitive weight — keep the grid honest.</p>

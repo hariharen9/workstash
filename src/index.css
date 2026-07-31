@@ -98,7 +98,6 @@
     text-rendering: optimizeLegibility;
     overflow-x: hidden;
     overflow-y: auto;
-    scroll-snap-type: y mandatory;
   }
 
   #root {

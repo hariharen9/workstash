@@ -72,6 +72,7 @@ interface AppState {
   updateTitle: (id: string, title: string) => void;
   updateCategory: (id: string, cat: TaskCategory) => void;
   archiveTask: (id: string) => void;
+  restoreTask: (id: string) => void;
   changeTopology: (mode: TopologyMode) => void;
   openShutter: (id: string) => void;
   closeShutter: () => void;
@@ -263,6 +264,44 @@ export const useStore = create<AppState>()(
         }
         set((state) => ({
           tasks: state.tasks.map(t => t.id === id ? { ...t, completed: true, timer: t.timer ? { ...t.timer, running: false } : t.timer } : t)
+        }));
+      },
+
+      restoreTask: (id) => {
+        const task = get().tasks.find(t => t.id === id);
+        if (!task) return;
+
+        const TOTAL_CELLS = get().gridLayout === '8x4' ? 32 : get().gridLayout === '6x5' ? 30 : 24;
+        const used = occupiedCells(get().tasks);
+        const taskCells = task.naturalW * task.naturalH;
+
+        // Try to fit at natural size first, then shrink to 1×1
+        let restoredW = task.naturalW;
+        let restoredH = task.naturalH;
+
+        if (used + taskCells > TOTAL_CELLS) {
+          // Try 1×1
+          if (used + 1 > TOTAL_CELLS) {
+            get().addToast('Grid full — archive or resize a block first', '⚠');
+            return;
+          }
+          restoredW = 1;
+          restoredH = 1;
+          get().addToast(`Restored "${task.title}" as 1×1 — grid is tight`, '↩');
+        } else {
+          get().addToast(`Restored "${task.title}"`, '↩');
+        }
+
+        get().logActivity(`Restored "${task.title}"`, task.cat === 'focus' ? 'focus' : task.cat === 'fire' ? 'fire' : 'admin');
+        set((state) => ({
+          tasks: state.tasks.map(t => t.id === id ? {
+            ...t,
+            completed: false,
+            w: restoredW,
+            h: restoredH,
+            naturalW: restoredW,
+            naturalH: restoredH,
+          } : t)
         }));
       },
 

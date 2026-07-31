@@ -27,7 +27,7 @@ export const HelpModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ 
           </button>
         </div>
 
-        <div className="p-6 pt-5 overflow-y-auto tile-scroll flex flex-col gap-5 text-[0.875rem] leading-relaxed text-muted">
+        <div className="p-6 pt-5 overflow-y-auto tile-scroll flex flex-col gap-5 text-[0.875rem] leading-relaxed text-muted" data-lenis-prevent="true">
           <section>
             <h3 className="font-display text-[1rem] font-semibold text-text tracking-[-0.02em] m-0 mb-2">The idea</h3>
             <p className="m-0">

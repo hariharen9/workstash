@@ -2,7 +2,7 @@ import React from 'react';
 import { useStore, type TopologyMode, occupiedCells } from '../store';
 import { GlowCard } from './GlowCard';
 
-export const Header: React.FC<{ onNewTask: () => void; onDefrag: () => void; onOpenSettings: () => void; onOpenHelp: () => void }> = ({ onNewTask, onDefrag, onOpenSettings, onOpenHelp }) => {
+export const Header: React.FC<{ onNewTask: () => void; onDefrag: () => void; onOpenSettings: () => void; onOpenHelp: () => void; onOpenArchive: () => void }> = ({ onNewTask, onDefrag, onOpenSettings, onOpenHelp, onOpenArchive }) => {
   const { mode, changeTopology, tasks, addToast, gridLayout } = useStore();
 
   const TOTAL_CELLS = gridLayout === '8x4' ? 32 : gridLayout === '6x5' ? 30 : 24;
@@ -37,37 +37,39 @@ export const Header: React.FC<{ onNewTask: () => void; onDefrag: () => void; onO
       className="w-full rounded-t-none rounded-b-2xl flex items-center justify-between gap-4 p-[14px_22px] shrink-0 bg-surface/90"
       style={{ border: 'none', borderBottom: '1px solid var(--color-line)', zIndex: 40 }}
     >
-      <div className="flex items-center gap-3 min-w-0">
-        <div className="w-7 h-7 rounded-[8px] bg-[conic-gradient(from_220deg,theme(colors.violet),theme(colors.teal),theme(colors.amber),theme(colors.violet))] grid place-items-center shadow-brand shrink-0">
-          <span className="w-2.5 h-2.5 rounded-[3px] bg-void"></span>
+      <div className="flex items-center gap-6 min-w-0">
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="w-7 h-7 rounded-[8px] bg-[conic-gradient(from_220deg,theme(colors.violet),theme(colors.teal),theme(colors.amber),theme(colors.violet))] grid place-items-center shadow-brand shrink-0">
+            <span className="w-2.5 h-2.5 rounded-[3px] bg-void"></span>
+          </div>
+          <div className="min-w-0">
+            <h1 className="font-display text-[1.05rem] font-semibold m-0 tracking-[-0.03em] leading-none">
+              WorkStash
+            </h1>
+            <p className="text-muted text-[0.72rem] m-0 mt-1 tracking-wide font-medium">Spatial task workspace</p>
+          </div>
         </div>
-        <div className="min-w-0">
-          <h1 className="font-display text-[1.05rem] font-semibold m-0 tracking-[-0.03em] leading-none">
-            WorkStash
-          </h1>
-          <p className="text-muted text-[0.72rem] m-0 mt-1 tracking-wide font-medium">Spatial task workspace</p>
-        </div>
-      </div>
 
-      <div className="flex gap-1 bg-void/50 p-1 rounded-xl border border-line shrink-0">
-        {modes.map((m) => (
-          <button
-            key={m.id}
-            type="button"
-            className={`border-none bg-transparent text-muted text-[0.8125rem] font-semibold py-2 px-3 rounded-lg cursor-pointer transition-all duration-200 flex items-center gap-2 hover:text-text ${
-              mode === m.id ? 'bg-elevated-hi text-text shadow-[inset_0_0_0_1px_theme(colors.line)]' : ''
-            }`}
-            onClick={() => handleTopoClick(m.id)}
-          >
-            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: m.color }} />
-            {m.label}
-          </button>
-        ))}
+        <div className="flex gap-1 bg-void/50 p-1 rounded-xl border border-line shrink-0">
+          {modes.map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              className={`border-none bg-transparent text-muted text-[0.8125rem] font-semibold py-2 px-3 rounded-lg cursor-pointer transition-all duration-200 flex items-center gap-2 hover:text-text ${
+                mode === m.id ? 'bg-elevated-hi text-text shadow-[inset_0_0_0_1px_theme(colors.line)]' : ''
+              }`}
+              onClick={() => handleTopoClick(m.id)}
+            >
+              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: m.color }} />
+              {m.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="flex items-center gap-2.5 shrink-0">
-        <div className="flex items-center gap-2.5 mr-1">
-          <span className="text-[0.75rem] text-muted font-mono font-medium tracking-wide tabular-nums">
+        <div className="relative flex items-center gap-2.5 mr-1 group/cap">
+          <span className="text-[0.75rem] text-muted font-mono font-medium tracking-wide tabular-nums cursor-default select-none">
             {used}/{TOTAL_CELLS}
           </span>
           <div className="w-[132px] h-1.5 rounded-full bg-elevated overflow-hidden border border-line/60">
@@ -76,7 +78,57 @@ export const Header: React.FC<{ onNewTask: () => void; onDefrag: () => void; onO
               style={{ width: `${capacityPct}%`, background: capColor }}
             />
           </div>
+
+          {/* Capacity tooltip */}
+          <div className="pointer-events-none absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[260px] opacity-0 group-hover/cap:opacity-100 transition-opacity duration-200 z-50 flex flex-col items-center">
+            {/* Arrow pointing up */}
+            <div className="w-2.5 h-2.5 rotate-45 bg-elevated-hi border-l border-t border-line -mb-[5px] z-10" />
+            <div className="bg-elevated-hi border border-line rounded-2xl p-4 shadow-toast flex flex-col gap-3 w-full">
+              {/* Header */}
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-mono text-[0.6rem] font-semibold tracking-[0.08em] uppercase text-muted">Grid Capacity</span>
+                <span className="font-mono text-[0.75rem] font-bold tabular-nums" style={{ color: capColor }}>{used}/{TOTAL_CELLS}</span>
+              </div>
+
+              {/* Bar */}
+              <div className="h-1.5 rounded-full bg-elevated overflow-hidden border border-line/50">
+                <div
+                  className="h-full rounded-full transition-[width] duration-500"
+                  style={{ width: `${capacityPct}%`, background: capColor }}
+                />
+              </div>
+
+              {/* Breakdown */}
+              <div className="flex flex-col gap-1.5 text-[0.75rem]">
+                <p className="text-muted m-0 leading-snug">
+                  Each block occupies <span className="text-text font-semibold">w × h cells</span> on the grid. The total varies by layout:
+                </p>
+                <div className="grid grid-cols-3 gap-1.5 mt-0.5">
+                  {(['6x4', '8x4', '6x5'] as const).map(l => {
+                    const total = l === '8x4' ? 32 : l === '6x5' ? 30 : 24;
+                    const isCurrent = gridLayout === l;
+                    return (
+                      <div key={l} className={`text-center py-1.5 rounded-lg border text-[0.68rem] font-mono ${isCurrent ? 'bg-elevated border-faint text-text' : 'bg-void/40 border-line/50 text-faint'}`}>
+                        <div className="font-semibold">{l}</div>
+                        <div className="text-[0.6rem] opacity-70 mt-0.5">{total} cells</div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="text-muted m-0 leading-snug mt-0.5">
+                  <span className="text-text font-semibold">{TOTAL_CELLS - used}</span> {TOTAL_CELLS - used === 1 ? 'cell' : 'cells'} remaining. Completed or archived blocks don't count.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
+        <button
+          type="button"
+          className="cursor-pointer font-semibold text-[0.8125rem] py-2 px-3.5 rounded-[10px] transition-all duration-200 flex items-center gap-1.5 bg-elevated text-muted border border-line hover:text-text hover:border-faint"
+          onClick={onOpenArchive}
+        >
+          Archive
+        </button>
         <button
           type="button"
           className="cursor-pointer font-semibold text-[0.8125rem] py-2 px-3.5 rounded-[10px] transition-all duration-200 flex items-center gap-1.5 bg-elevated text-muted border border-line hover:text-text hover:border-faint"

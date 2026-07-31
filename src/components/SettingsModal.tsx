@@ -32,8 +32,12 @@ export const SettingsModal: React.FC<{ isOpen: boolean; onClose: () => void }> =
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-void/80 backdrop-blur-sm animate-tileIn">
-      <GlowCard customSize glowColor="purple" className="w-full max-w-[420px] bg-surface rounded-2xl p-6 flex flex-col gap-6 shadow-2xl relative">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-void/80 backdrop-blur-sm animate-tileIn"
+      data-lenis-prevent="true"
+      onClick={onClose}
+    >
+      <GlowCard customSize glowColor="purple" className="w-full max-w-[420px] bg-surface rounded-2xl p-6 flex flex-col gap-6 shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
         <button onClick={onClose} className="absolute top-4 right-4 text-muted hover:text-text text-xl cursor-pointer">&times;</button>
         <h2 className="text-xl font-display font-semibold tracking-tight">Workspace Settings</h2>
 

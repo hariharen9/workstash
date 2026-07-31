@@ -218,7 +218,7 @@ const ActivityLog = () => {
 
 export const AnalyticsDashboard: React.FC = () => {
   return (
-    <section className="min-h-screen w-full snap-start shrink-0 flex flex-col p-8 md:p-12 bg-void relative z-0">
+    <section className="min-h-screen w-full shrink-0 flex flex-col p-8 md:p-12 bg-void relative z-0">
       <div className="max-w-4xl w-full mx-auto flex flex-col gap-8 mt-4 md:mt-12">
         <header className="flex items-baseline justify-between border-b border-line pb-5">
           <h2 className="font-display text-2xl md:text-[2rem] font-semibold tracking-[-0.03em] m-0">Workspace Analytics</h2>
