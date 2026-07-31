@@ -80,12 +80,12 @@ export const GlowCard = forwardRef<any, GlowCardProps>(({
     const baseStyles: React.CSSProperties = {
       '--base': base,
       '--spread': spread,
-      '--radius': '14',
-      '--border': '1', // Adjusted for tile aesthetics
-      '--backdrop': 'rgba(12, 16, 25, 0.4)', // Slightly dark for the glass look
-      '--backup-border': 'var(--backdrop)',
-      '--size': '250',
-      '--outer': '1',
+      '--radius': '16',
+      '--border': '1',
+      '--backdrop': 'rgba(10, 14, 22, 0.55)',
+      '--backup-border': 'rgba(42, 51, 72, 0.85)',
+      '--size': '220',
+      '--outer': '0.7',
       '--border-size': 'calc(var(--border, 1) * 1px)',
       '--spotlight-size': 'calc(var(--size, 150) * 1px)',
       '--hue': 'calc(var(--base) + (var(--xp, 0) * var(--spread, 0)))',
@@ -93,7 +93,7 @@ export const GlowCard = forwardRef<any, GlowCardProps>(({
         var(--spotlight-size) var(--spotlight-size) at
         calc(var(--x, 0) * 1px)
         calc(var(--y, 0) * 1px),
-        hsl(var(--hue, 210) calc(var(--saturation, 100) * 1%) calc(var(--lightness, 70) * 1%) / var(--bg-spot-opacity, 0.05)), transparent
+        hsl(var(--hue, 210) calc(var(--saturation, 100) * 1%) calc(var(--lightness, 70) * 1%) / var(--bg-spot-opacity, 0.04)), transparent
       )`,
       backgroundColor: 'var(--backdrop, transparent)',
       backgroundSize: 'calc(100% + (2 * var(--border-size))) calc(100% + (2 * var(--border-size)))',

@@ -28,7 +28,7 @@ export const DefragOverlay: React.FC<{
     if (isDefragging) {
       // Snapshot the current tasks
       const currentTasks = tasksRef.current;
-      setLocalTasks([...currentTasks]);
+      setLocalTasks([...currentTasks].filter(t => !t.isPen));
       setHighlightCompleted(false);
       
       const completedCount = currentTasks.filter(t => t.completed).length;

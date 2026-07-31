@@ -49,8 +49,8 @@ export const FocusShutter: React.FC = () => {
   if (!task) {
     return (
       <>
-        <div className={`fixed bottom-[26px] left-1/2 -translate-x-1/2 z-[42] font-mono text-[11px] text-muted bg-surface border border-line p-[8px_16px] rounded-[20px] opacity-0 transition-opacity duration-300 pointer-events-none ${isHoveringTask ? 'opacity-100' : ''}`}>
-          hover a block, press <b>F</b> to enter Focus Shutter · <b>Esc</b> to exit
+        <div className={`fixed bottom-[26px] left-1/2 -translate-x-1/2 z-[42] text-[0.8125rem] text-muted bg-surface/95 border border-line px-4 py-2.5 rounded-full opacity-0 transition-opacity duration-300 pointer-events-none shadow-toast ${isHoveringTask ? 'opacity-100' : ''}`}>
+          Hover a block, press <span className="text-text font-semibold">F</span> for Focus · <span className="text-text font-semibold">Esc</span> to exit
         </div>
         <div className={`fixed inset-0 bg-[#05070C]/72 backdrop-blur-[14px] opacity-0 pointer-events-none transition-opacity duration-400 ease-out z-40 ${shutterOpen ? 'opacity-100 pointer-events-auto' : ''}`} onClick={closeShutter}>
           <div className="fixed inset-0 z-[41] flex items-center justify-center p-[5vh_8vw] pointer-events-none">
@@ -65,17 +65,17 @@ export const FocusShutter: React.FC = () => {
 
   return (
     <>
-      <div className="fixed bottom-[26px] left-1/2 -translate-x-1/2 z-[42] font-mono text-[11px] text-muted bg-surface border border-line p-[8px_16px] rounded-[20px] transition-opacity duration-300 pointer-events-none opacity-100">
-        hover a block, press <b>F</b> to enter Focus Shutter · <b>Esc</b> to exit
+      <div className="fixed bottom-[26px] left-1/2 -translate-x-1/2 z-[42] text-[0.8125rem] text-muted bg-surface/95 border border-line px-4 py-2.5 rounded-full transition-opacity duration-300 pointer-events-none opacity-100 shadow-toast">
+        Press <span className="text-text font-semibold">Esc</span> to exit Focus Shutter
       </div>
-      <div className="fixed inset-0 bg-[#05070C]/72 backdrop-blur-[14px] transition-opacity duration-400 ease-out z-40 opacity-100 pointer-events-auto" onClick={closeShutter}>
+      <div className="fixed inset-0 bg-[#05070C]/75 backdrop-blur-[16px] transition-opacity duration-400 ease-out z-40 opacity-100 pointer-events-auto" onClick={closeShutter}>
         <div className="fixed inset-0 z-[41] flex items-center justify-center p-[5vh_8vw] pointer-events-none">
-          <div className="w-full max-w-[820px] h-[78vh] bg-surface border border-line rounded-[22px] p-[30px_34px] flex flex-col transition-[transform,opacity] duration-450 ease-custom-shutter shadow-shutter scale-100 opacity-100 pointer-events-auto" onClick={e => e.stopPropagation()}>
-            <div className="flex items-start justify-between gap-2 mb-2.5">
+          <div className="w-full max-w-[860px] h-[78vh] bg-surface border border-line rounded-[24px] p-8 flex flex-col transition-[transform,opacity] duration-450 ease-custom-shutter shadow-shutter scale-100 opacity-100 pointer-events-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-start justify-between gap-4 mb-1">
               {isEditingTitle ? (
                 <input
                   ref={titleInputRef}
-                  className="font-display font-semibold text-xl leading-1.3 tracking-[-0.01em] m-0 flex-1 min-w-0 bg-elevated border border-line rounded-[8px] px-2 py-1 text-text outline-none focus:border-faint"
+                  className="font-display font-semibold text-[1.6rem] leading-tight tracking-[-0.03em] m-0 flex-1 min-w-0 bg-elevated border border-line rounded-xl px-3 py-2 text-text outline-none focus:border-faint"
                   value={draftTitle}
                   maxLength={80}
                   onChange={(e) => setDraftTitle(e.target.value)}
@@ -90,18 +90,18 @@ export const FocusShutter: React.FC = () => {
                 />
               ) : (
                 <p
-                  className="font-display font-semibold text-xl leading-1.3 tracking-[-0.01em] m-0 break-words cursor-text hover:text-violet transition-colors"
+                  className="font-display font-semibold text-[1.6rem] leading-tight tracking-[-0.03em] m-0 break-words cursor-text hover:text-violet transition-colors"
                   title="Click to rename"
                   onClick={() => setIsEditingTitle(true)}
                 >
                   {task.title}
                 </p>
               )}
-              {task.cat === 'focus' && <span className="text-[9px] font-mono p-[2px_6px] rounded-[5px] tracking-[0.03em] bg-violet-dim text-violet">DEEP WORK</span>}
-              {task.cat === 'fire' && <span className="text-[9px] font-mono p-[2px_6px] rounded-[5px] tracking-[0.03em] bg-amber-dim text-amber">FIREFIGHT</span>}
-              {task.cat === 'admin' && <span className="text-[9px] font-mono p-[2px_6px] rounded-[5px] tracking-[0.03em] bg-teal-dim text-teal">ADMIN</span>}
+              {task.cat === 'focus' && <span className="font-mono text-[0.6875rem] font-semibold px-2.5 py-1 rounded-md tracking-[0.04em] uppercase bg-violet-dim text-violet shrink-0">Deep Focus</span>}
+              {task.cat === 'fire' && <span className="font-mono text-[0.6875rem] font-semibold px-2.5 py-1 rounded-md tracking-[0.04em] uppercase bg-amber-dim text-amber shrink-0">Urgent</span>}
+              {task.cat === 'admin' && <span className="font-mono text-[0.6875rem] font-semibold px-2.5 py-1 rounded-md tracking-[0.04em] uppercase bg-teal-dim text-teal shrink-0">Quick Admin</span>}
             </div>
-            <div className="flex-1 min-h-0 mt-3.5 flex flex-col">
+            <div className="flex-1 min-h-0 mt-5 flex flex-col">
               <TileContent task={proxyTask} />
             </div>
           </div>

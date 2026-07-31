@@ -7,11 +7,13 @@ import { NewTaskModal } from './components/NewTaskModal';
 import { DefragOverlay } from './components/DefragOverlay';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { SettingsModal } from './components/SettingsModal';
+import { HelpModal } from './components/HelpModal';
 import { useStore } from './store';
 
 function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isDefragging, setIsDefragging] = useState(false);
   const { runDefrag } = useStore();
 
@@ -44,10 +46,11 @@ function App() {
   return (
     <>
       <section className="h-screen w-full flex flex-col snap-start shrink-0 relative z-10 bg-void">
-        <Header 
-          onNewTask={() => setIsModalOpen(true)} 
-          onDefrag={() => setIsDefragging(true)} 
+        <Header
+          onNewTask={() => setIsModalOpen(true)}
+          onDefrag={() => setIsDefragging(true)}
           onOpenSettings={() => setIsSettingsOpen(true)}
+          onOpenHelp={() => setIsHelpOpen(true)}
         />
         <BentoGrid onNewTask={() => setIsModalOpen(true)} />
       </section>
@@ -55,22 +58,27 @@ function App() {
       <AnalyticsDashboard />
 
       <FocusShutter />
-      
-      <NewTaskModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
+
+      <NewTaskModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
       />
-      
-      <SettingsModal 
+
+      <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
       />
-      
-      <DefragOverlay 
+
+      <HelpModal
+        isOpen={isHelpOpen}
+        onClose={() => setIsHelpOpen(false)}
+      />
+
+      <DefragOverlay
         isDefragging={isDefragging}
         onComplete={handleDefragComplete}
       />
-      
+
       <ToastContainer />
     </>
   );
@@ -101,12 +109,12 @@ const ToastItem: React.FC<{ toast: { id: string, msg: string, icon: string }, on
 
   return (
     <div 
-      className={`bg-elevated-hi border border-line p-[12px_16px] rounded-[11px] text-[12.5px] max-w-[320px] animate-toastIn shadow-toast flex items-center gap-2.5 ${
+      className={`bg-elevated-hi/95 border border-line px-4 py-3 rounded-xl text-[0.8125rem] font-medium max-w-[340px] animate-toastIn shadow-toast flex items-center gap-2.5 backdrop-blur-sm ${
         isRemoving ? 'opacity-0 translate-y-2 transition-[opacity,transform] duration-400' : ''
       }`}
     >
-      <span>{toast.icon}</span>
-      <span>{toast.msg}</span>
+      <span className="text-[0.9rem] shrink-0">{toast.icon}</span>
+      <span className="leading-snug text-text">{toast.msg}</span>
     </div>
   );
 };

@@ -1,35 +1,36 @@
 @import "tailwindcss";
 
 @theme {
-  --color-void: #0A0D14;
-  --color-surface: #121826;
-  --color-elevated: #1A2233;
-  --color-elevated-hi: #212B40;
-  --color-line: #232B3D;
-  --color-text: #E7ECF6;
-  --color-muted: #7C8AA3;
-  --color-faint: #4A5570;
-  --color-violet: #8B7CF6;
-  --color-violet-dim: #8B7CF61f;
-  --color-amber: #F5A623;
-  --color-amber-dim: #F5A6231f;
-  --color-teal: #5EEAD4;
-  --color-teal-dim: #5EEAD41f;
+  --color-void: #070A10;
+  --color-surface: #101622;
+  --color-elevated: #171F2E;
+  --color-elevated-hi: #1E283A;
+  --color-line: #2A3348;
+  --color-text: #F1F4FA;
+  --color-muted: #9AA6BD;
+  --color-faint: #5B6782;
+  --color-violet: #9B8CFF;
+  --color-violet-dim: #9B8CFF24;
+  --color-amber: #F6B03A;
+  --color-amber-dim: #F6B03A24;
+  --color-teal: #4FE3CE;
+  --color-teal-dim: #4FE3CE24;
   --color-danger: #F0645A;
 
-  --radius-radius: 16px;
+  --radius-radius: 18px;
 
-  --font-sans: Inter, sans-serif;
-  --font-mono: JetBrains Mono, monospace;
-  --font-display: Space Grotesk, sans-serif;
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-display: "Space Grotesk", ui-sans-serif, sans-serif;
 
-  --shadow-focus-cat: inset 3px 0 0 #8B7CF6;
-  --shadow-fire-cat: inset 3px 0 0 #F5A623;
-  --shadow-admin-cat: inset 3px 0 0 #5EEAD4;
-  --shadow-pen-cat: inset 3px 0 0 #4A5570;
-  --shadow-shutter: 0 40px 100px -20px rgba(0,0,0,0.6);
-  --shadow-toast: 0 12px 30px -8px rgba(0,0,0,0.5);
-  --shadow-brand: 0 0 18px -4px #8B7CF6;
+  --shadow-focus-cat: inset 3px 0 0 #9B8CFF;
+  --shadow-fire-cat: inset 3px 0 0 #F6B03A;
+  --shadow-admin-cat: inset 3px 0 0 #4FE3CE;
+  --shadow-pen-cat: inset 3px 0 0 #5B6782;
+  --shadow-shutter: 0 40px 100px -20px rgba(0,0,0,0.65);
+  --shadow-toast: 0 16px 40px -12px rgba(0,0,0,0.55);
+  --shadow-brand: 0 0 20px -4px #9B8CFF;
+  --shadow-tile: 0 8px 28px -12px rgba(0,0,0,0.55);
 
   --ease-custom-defrag: cubic-bezier(0.3, 0.9, 0.3, 1);
   --ease-custom-in: cubic-bezier(0.25, 1, 0.4, 1);
@@ -40,6 +41,9 @@
   --animate-completePop: completePop 0.5s cubic-bezier(0.3, 1.5, 0.5, 1) forwards;
   --animate-tileIn: tileIn 0.4s cubic-bezier(0.25, 1, 0.4, 1) forwards;
   --animate-toastIn: toastIn 0.35s cubic-bezier(0.25, 1, 0.4, 1) forwards;
+  --animate-checkPop: checkPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  --animate-checkDraw: checkDraw 0.35s cubic-bezier(0.4, 0, 0.2, 1) 0.08s forwards;
+  --animate-checkBurst: checkBurst 0.5s ease-out forwards;
 
   @keyframes completePop {
     0% { transform: scale(1); opacity: 1; }
@@ -47,12 +51,30 @@
     100% { transform: scale(0.85); opacity: 0; }
   }
   @keyframes tileIn {
-    from { opacity: 0; transform: scale(0.92); }
-    to { opacity: 1; transform: scale(1); }
+    from { opacity: 0; transform: scale(0.94) translateY(4px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
   }
   @keyframes toastIn {
     from { opacity: 0; transform: translateY(10px) scale(0.96); }
     to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes checkPop {
+    0% { transform: scale(1); }
+    35% { transform: scale(0.86); }
+    70% { transform: scale(1.12); }
+    100% { transform: scale(1); }
+  }
+  @keyframes checkDraw {
+    from { stroke-dashoffset: 24; }
+    to { stroke-dashoffset: 0; }
+  }
+  @keyframes checkBurst {
+    0% { opacity: 0.55; transform: scale(0.55); }
+    100% { opacity: 0; transform: scale(1.85); }
+  }
+  @keyframes checkFill {
+    from { background-color: transparent; }
+    to { background-color: var(--color-teal); }
   }
 }
 
@@ -61,8 +83,19 @@
     margin: 0;
     padding: 0;
     background-color: var(--color-void);
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(155, 140, 255, 0.08), transparent 55%),
+      radial-gradient(ellipse 60% 40% at 100% 100%, rgba(79, 227, 206, 0.04), transparent 50%);
+    background-attachment: fixed;
     color: var(--color-text);
     font-family: var(--font-sans);
+    font-optical-sizing: auto;
+    font-size: 15px;
+    line-height: 1.45;
+    letter-spacing: -0.011em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
     overflow-x: hidden;
     overflow-y: auto;
     scroll-snap-type: y mandatory;
@@ -74,18 +107,209 @@
     min-height: 100vh;
   }
 
+  button, input, textarea {
+    font-family: inherit;
+  }
+
+  ::placeholder {
+    color: var(--color-faint);
+    opacity: 1;
+  }
+
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
   }
   ::-webkit-scrollbar-thumb {
     background: var(--color-line);
-    border-radius: 4px;
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-faint);
+    border: 2px solid transparent;
+    background-clip: padding-box;
   }
 }
 
-/* GlowCard Styles */
+/* Shared tile control styles */
 @layer components {
+  .tile-action {
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 0.5rem;
+    border: none;
+    background: transparent;
+    color: var(--color-muted);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: background 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+    flex-shrink: 0;
+  }
+  .tile-action:hover {
+    background: var(--color-elevated-hi);
+    color: var(--color-text);
+  }
+
+  .tile-chip {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    padding: 0.25rem 0.45rem;
+    border-radius: 0.4rem;
+    border: 1px solid var(--color-line);
+    background: var(--color-elevated);
+    color: var(--color-muted);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+  .tile-chip:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+  .tile-chip:hover:not(:disabled) {
+    color: var(--color-text);
+    border-color: var(--color-faint);
+  }
+  .tile-chip.is-active {
+    background: var(--color-elevated-hi);
+    color: var(--color-text);
+    border-color: var(--color-faint);
+  }
+
+  .tile-field {
+    width: 100%;
+    background: var(--color-elevated);
+    border: 1px solid var(--color-line);
+    color: var(--color-text);
+    border-radius: 0.625rem;
+    padding: 0.55rem 0.7rem;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    outline: none;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .tile-field:focus {
+    border-color: var(--color-faint);
+    background: var(--color-elevated-hi);
+  }
+
+  .tile-tab {
+    border: none;
+    background: transparent;
+    color: var(--color-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    padding: 0.4rem 0.7rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .tile-tab:hover {
+    color: var(--color-text);
+  }
+  .tile-tab.is-active {
+    background: var(--color-elevated-hi);
+    color: var(--color-text);
+    box-shadow: inset 0 0 0 1px var(--color-line);
+  }
+
+  .check-box {
+    width: 1.05rem;
+    height: 1.05rem;
+    border-radius: 0.35rem;
+    border: 1.5px solid var(--color-faint);
+    flex-shrink: 0;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+  }
+  .check-box:hover {
+    border-color: var(--color-teal);
+    background: var(--color-teal-dim);
+  }
+  .check-box.is-done {
+    background: var(--color-teal);
+    border-color: var(--color-teal);
+  }
+
+  /* Hero checkbox for 1×1 tiles */
+  .hero-check {
+    position: relative;
+    width: 3.25rem;
+    height: 3.25rem;
+    border-radius: 1rem;
+    border: 2px solid var(--color-faint);
+    background: var(--color-elevated);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  }
+  .hero-check:hover {
+    border-color: var(--color-teal);
+    background: var(--color-teal-dim);
+    box-shadow: 0 0 0 4px var(--color-teal-dim);
+  }
+  .hero-check.is-checking {
+    animation: checkPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    border-color: var(--color-teal);
+    background: var(--color-teal);
+    box-shadow: 0 0 24px -4px rgba(79, 227, 206, 0.55);
+  }
+  .hero-check__burst {
+    position: absolute;
+    inset: -6px;
+    border-radius: inherit;
+    border: 2px solid var(--color-teal);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .hero-check.is-checking .hero-check__burst {
+    animation: checkBurst 0.5s ease-out forwards;
+  }
+  .hero-check__mark {
+    width: 1.35rem;
+    height: 1.35rem;
+    stroke: #070A10;
+    stroke-width: 3.2;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 24;
+    stroke-dashoffset: 24;
+    opacity: 0;
+  }
+  .hero-check.is-checking .hero-check__mark {
+    opacity: 1;
+    animation: checkDraw 0.35s cubic-bezier(0.4, 0, 0.2, 1) 0.08s forwards;
+  }
+
+  .tile-scroll {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .tile-scroll::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  .size-ribbon {
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-faint);
+  }
+
+  /* GlowCard Styles */
   [data-glow]::before,
   [data-glow]::after {
     pointer-events: none;
@@ -110,7 +334,7 @@
       calc(var(--y, 0) * 1px),
       hsl(var(--hue, 210) calc(var(--saturation, 100) * 1%) calc(var(--lightness, 50) * 1%) / var(--border-spot-opacity, 1)), transparent 100%
     );
-    filter: brightness(2);
+    filter: brightness(1.6);
   }
   
   [data-glow]::after {
@@ -118,7 +342,7 @@
       calc(var(--spotlight-size) * 0.5) calc(var(--spotlight-size) * 0.5) at
       calc(var(--x, 0) * 1px)
       calc(var(--y, 0) * 1px),
-      hsl(0 100% 100% / var(--border-light-opacity, 1)), transparent 100%
+      hsl(0 100% 100% / var(--border-light-opacity, 0.7)), transparent 100%
     );
   }
   

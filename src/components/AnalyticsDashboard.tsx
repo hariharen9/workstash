@@ -12,7 +12,7 @@ const Heatmap = () => {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        <h3 className="text-xs font-mono tracking-widest text-muted uppercase">Cognitive Focus Map</h3>
+        <h3 className="text-[0.72rem] font-semibold tracking-[0.08em] text-muted uppercase">Cognitive Focus Map</h3>
         <span className="text-xs font-mono text-violet">
           {stats.count} Pomodoro{stats.count === 1 ? '' : 's'}
         </span>
@@ -89,15 +89,15 @@ const EnergyChart = () => {
           ) : (
             <>
               <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-violet"></span><span className="text-muted">Deep Work</span></div>
+                <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-violet"></span><span className="text-muted">Deep Focus</span></div>
                 <span className="font-mono text-text">{Math.round(pf)}%</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-amber"></span><span className="text-muted">Firefight</span></div>
+                <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-amber"></span><span className="text-muted">Urgent</span></div>
                 <span className="font-mono text-text">{Math.round(pFire)}%</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-teal"></span><span className="text-muted">Admin</span></div>
+                <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-teal"></span><span className="text-muted">Quick Admin</span></div>
                 <span className="font-mono text-text">{Math.round(pAdmin)}%</span>
               </div>
             </>
@@ -109,48 +109,76 @@ const EnergyChart = () => {
 };
 
 const PomodoroWidget = () => {
-  const { tasks, setTimerRunning } = useStore();
+  const { tasks, setTimerRunning, resetTimer } = useStore();
   const activeTask = tasks.find(t => t.timer && t.timer.running && !t.completed)
-                  || tasks.find(t => t.timer && t.timer.remaining > 0 && !t.completed);
+                  || tasks.find(t => t.timer && t.timer.remaining > 0 && timerStarted(t) && !t.completed)
+                  || tasks.find(t => t.timer && !t.completed && !t.isPen);
 
   if (!activeTask || !activeTask.timer) {
     return (
       <div className="flex flex-col gap-2">
-        <h3 className="text-xs font-mono tracking-widest text-muted uppercase">Global Timer</h3>
+        <h3 className="text-[0.72rem] font-semibold tracking-[0.08em] text-muted uppercase">Global Timer</h3>
         <GlowCard customSize glowColor="orange" className="p-5 bg-surface rounded-2xl flex items-center justify-center h-48 text-muted text-sm font-mono">
-          [ No active timers ]
+          [ No timers yet ]
         </GlowCard>
       </div>
     );
   }
 
-  const mins = Math.floor(activeTask.timer.remaining / 60);
-  const secs = activeTask.timer.remaining % 60;
-  const progress = ((activeTask.timer.total - activeTask.timer.remaining) / activeTask.timer.total) * 100;
+  const timer = activeTask.timer;
+  const mins = Math.floor(timer.remaining / 60);
+  const secs = timer.remaining % 60;
+  const progress = ((timer.total - timer.remaining) / timer.total) * 100;
+  const isPausedMid = !timer.running && timer.remaining > 0 && timer.remaining < timer.total;
+  const primary = timer.running ? 'Pause' : isPausedMid ? 'Continue' : timer.remaining === 0 ? 'Restart' : 'Start';
 
   return (
     <div className="flex flex-col gap-2">
-      <h3 className="text-xs font-mono tracking-widest text-muted uppercase">Global Timer</h3>
+      <h3 className="text-[0.72rem] font-semibold tracking-[0.08em] text-muted uppercase">Global Timer</h3>
       <GlowCard customSize glowColor="orange" className="p-5 bg-surface rounded-2xl flex flex-col items-center justify-center h-48 relative overflow-hidden group">
         <div className="absolute inset-y-0 left-0 bg-violet/[0.08] transition-all duration-1000 ease-linear" style={{ width: `${progress}%` }} />
 
         <div className="relative z-10 flex flex-col items-center gap-1 w-full px-4">
           <span className="text-xs text-muted font-mono truncate w-full text-center">{activeTask.title}</span>
-          <div className="text-[44px] font-display font-bold tracking-tight text-text leading-none mt-1">
+          <div className="text-[44px] font-display font-bold tracking-tight text-text leading-none mt-1 tabular-nums">
             {mins.toString().padStart(2, '0')}:{secs.toString().padStart(2, '0')}
           </div>
+          <p className="text-[0.7rem] text-muted m-0 font-medium">
+            {timer.running ? 'Running' : isPausedMid ? 'Paused' : timer.remaining === 0 ? 'Finished' : 'Ready'}
+          </p>
 
-          <button
-            className={`mt-4 px-6 py-2 rounded-lg font-mono text-xs uppercase tracking-widest transition-colors shadow-sm ${activeTask.timer.running ? 'bg-faint text-text hover:bg-muted' : 'bg-violet text-white hover:bg-violet/80'}`}
-            onClick={() => setTimerRunning(activeTask.id, !activeTask.timer!.running)}
-          >
-            {activeTask.timer.running ? 'Pause' : 'Start'}
-          </button>
+          <div className="mt-3 flex gap-2">
+            <button
+              className={`px-5 py-2 rounded-lg font-semibold text-xs uppercase tracking-wider transition-colors shadow-sm cursor-pointer border-none ${
+                timer.running ? 'bg-faint text-text hover:bg-muted' : 'bg-violet text-void hover:bg-violet/80'
+              }`}
+              onClick={() => {
+                if (timer.remaining === 0) {
+                  resetTimer(activeTask.id);
+                  setTimerRunning(activeTask.id, true);
+                } else {
+                  setTimerRunning(activeTask.id, !timer.running);
+                }
+              }}
+            >
+              {primary}
+            </button>
+            <button
+              className="px-4 py-2 rounded-lg font-semibold text-xs uppercase tracking-wider transition-colors bg-elevated text-muted border border-line hover:text-text cursor-pointer"
+              onClick={() => resetTimer(activeTask.id)}
+            >
+              Restart
+            </button>
+          </div>
         </div>
       </GlowCard>
     </div>
   );
 };
+
+function timerStarted(t: { timer?: { remaining: number; total: number } }) {
+  return !!t.timer && t.timer.remaining < t.timer.total;
+}
 
 const ActivityLog = () => {
   const { activityLogs } = useStore();
@@ -192,9 +220,9 @@ export const AnalyticsDashboard: React.FC = () => {
   return (
     <section className="min-h-screen w-full snap-start shrink-0 flex flex-col p-8 md:p-12 bg-void relative z-0">
       <div className="max-w-4xl w-full mx-auto flex flex-col gap-8 mt-4 md:mt-12">
-        <header className="flex items-baseline justify-between border-b border-line pb-4">
-          <h2 className="font-display text-2xl md:text-3xl font-semibold tracking-tight">Workspace Analytics</h2>
-          <span className="font-mono text-muted text-xs tracking-widest uppercase">Live Telemetry</span>
+        <header className="flex items-baseline justify-between border-b border-line pb-5">
+          <h2 className="font-display text-2xl md:text-[2rem] font-semibold tracking-[-0.03em] m-0">Workspace Analytics</h2>
+          <span className="font-mono text-muted text-[0.7rem] tracking-[0.08em] uppercase font-medium">Live Telemetry</span>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

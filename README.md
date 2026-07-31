@@ -7,8 +7,8 @@ Size reflects cognitive weight. Capacity is limited on purpose. Topology modes r
 ## Features
 
 - **Bento grid** with layouts `6×4` (24), `8×4` (32), or `6×5` (30 cells)
-- **Categories:** Deep Work, Firefighter, Admin, plus a Holding Pen inbox
-- **Topology modes:** Normal, Deep Work, Firefighter, Admin Sweep
+- **Categories:** Deep Focus, Urgent, Quick Admin, plus an Inbox (Holding Pen)
+- **Board views:** All Blocks, Solo Focus, Urgent First, Admin Sweep
 - **Per-task tools:** notes, subtasks, pomodoro timer, energy budget
 - **Focus Shutter** — fullscreen focus (`F` while hovering a tile, `Esc` to exit)
 - **End-of-Day Defrag** — clear completed blocks and compact the grid

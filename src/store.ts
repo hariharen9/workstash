@@ -85,6 +85,7 @@ interface AppState {
   tickTimer: (id: string) => void;
   resetTimer: (id: string) => void;
   adjustTimer: (id: string, deltaSeconds: number) => void;
+  setTimerDuration: (id: string, totalSeconds: number) => void;
   setEnergy: (id: string, val: number) => void;
   addPenItem: (id: string, text: string) => void;
   removePenItem: (id: string, index: number) => void;
@@ -270,9 +271,9 @@ export const useStore = create<AppState>()(
         let nextFocusId = mode !== 'deep' ? null : state.focusedTaskId;
         const result = applyTopology(nextTasks, mode, nextFocusId, state.gridLayout);
         const labels: Record<TopologyMode, string> = {
-          normal: 'Switched to Normal',
-          deep: 'Switched to Deep Work',
-          fire: 'Switched to Firefighter',
+          normal: 'Switched to All Blocks',
+          deep: 'Switched to Solo Focus',
+          fire: 'Switched to Urgent First',
           admin: 'Switched to Admin Sweep',
         };
         setTimeout(() => get().logActivity(labels[mode], 'system'), 0);
@@ -385,8 +386,28 @@ export const useStore = create<AppState>()(
       adjustTimer: (id, deltaSeconds) => set((state) => ({
         tasks: state.tasks.map(t => {
           if (t.id === id && t.timer) {
-            const newTotal = Math.max(300, t.timer.total + deltaSeconds);
-            return { ...t, timer: { ...t.timer, total: newTotal, remaining: newTotal, running: false } };
+            const newTotal = Math.max(60, Math.min(7200, t.timer.total + deltaSeconds));
+            // Only rewrite remaining when timer hasn't started (or finished)
+            const untouched = t.timer.remaining === t.timer.total || t.timer.remaining === 0;
+            return {
+              ...t,
+              timer: {
+                ...t.timer,
+                total: newTotal,
+                remaining: untouched ? newTotal : Math.min(t.timer.remaining, newTotal),
+                running: false,
+              }
+            };
+          }
+          return t;
+        })
+      })),
+
+      setTimerDuration: (id, totalSeconds) => set((state) => ({
+        tasks: state.tasks.map(t => {
+          if (t.id === id && t.timer) {
+            const total = Math.max(60, Math.min(7200, totalSeconds));
+            return { ...t, timer: { total, remaining: total, running: false } };
           }
           return t;
         })
@@ -419,7 +440,7 @@ export const useStore = create<AppState>()(
         const text = pen?.items?.[index];
         if (!text) return;
 
-        const occupied = get().tasks.filter(t => !t.completed).reduce((sum, t) => sum + (t.parked ? 1 : t.w * t.h), 0);
+        const occupied = occupiedCells(get().tasks);
         const total = get().gridLayout === '8x4' ? 32 : get().gridLayout === '6x5' ? 30 : 24;
         if (occupied + 1 > total) {
           get().addToast('Not enough grid space — free a cell first', '⚠');
@@ -500,6 +521,13 @@ export const useStore = create<AppState>()(
     }
   )
 );
+
+export function occupiedCells(tasks: Task[]): number {
+  return tasks.reduce((sum, t) => {
+    if (t.completed || t.isPen) return sum;
+    return sum + (t.parked ? 1 : t.w * t.h);
+  }, 0);
+}
 
 /** Helpers for analytics views — pure functions over store data. */
 export function sessionsByDay(sessions: FocusSession[], days = 56): { date: string; count: number }[] {
