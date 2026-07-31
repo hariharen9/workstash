@@ -1,32 +1,70 @@
-# React + TypeScript + Vite
+# WorkStash
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A spatial task workspace — tasks live as resizable tiles on a finite bento grid, not as an endless list.
 
-Currently, two official plugins are available:
+Size reflects cognitive weight. Capacity is limited on purpose. Topology modes reshape the board for how you’re working today.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+- **Bento grid** with layouts `6×4` (24), `8×4` (32), or `6×5` (30 cells)
+- **Categories:** Deep Work, Firefighter, Admin, plus a Holding Pen inbox
+- **Topology modes:** Normal, Deep Work, Firefighter, Admin Sweep
+- **Per-task tools:** notes, subtasks, pomodoro timer, energy budget
+- **Focus Shutter** — fullscreen focus (`F` while hovering a tile, `Esc` to exit)
+- **End-of-Day Defrag** — clear completed blocks and compact the grid
+- **Live analytics** — focus heatmap from completed timers, energy allocation from tile budgets
+- **Persistence** — workspace saved automatically in the browser (localStorage)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Quick start
 
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Then open the URL Vite prints (usually `http://localhost:5173`).
+
+| Script | What it does |
+|--------|----------------|
+| `npm run dev` | Dev server with HMR |
+| `npm run build` | Typecheck + production bundle → `dist/` |
+| `npm run preview` | Serve the production build |
+| `npm run lint` | Oxlint |
+
+## How to use
+
+1. **New Task** — pick title, size (cognitive weight), and category
+2. **Click a title** to rename · **click the category badge** to reclassify
+3. Switch topology modes from the header when context changes
+4. Hover a tile and press **F** for Focus Shutter
+5. Capture interruptions in the **Holding Pen**; use **↗** to promote an item onto the grid
+6. Scroll down for **Workspace Analytics**
+7. **End-of-Day Defrag** when you’re done clearing completed work
+8. **Settings ⚙** — change grid size or reset the workspace
+
+Data survives refresh. Reset (Settings → Reset workspace) restores starter tasks and clears analytics.
+
+## Stack
+
+React 19 · TypeScript · Vite · Tailwind CSS v4 · Zustand (with persist) · @dnd-kit · Lenis
+
+## Project layout
+
+```
+src/
+  store.ts                 # Domain state, persistence, analytics helpers
+  App.tsx                  # Layout, scroll, modals
+  components/
+    BentoGrid.tsx          # Grid + drag-and-drop
+    Tile.tsx / TileContent # Task UI (edit, timer, tabs)
+    Header.tsx             # Modes, capacity, actions
+    FocusShutter.tsx
+    AnalyticsDashboard.tsx # Live telemetry
+    …
+```
+
+## Notes
+
+- Timers pause across reloads (they don’t keep running in the background).
+- Only one timer runs at a time.
+- Everything stays on-device — there is no account or server sync yet.

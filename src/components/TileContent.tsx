@@ -8,7 +8,7 @@ function fmtTime(s: number) {
 }
 
 export const TileContent: React.FC<{ task: Task }> = ({ task }) => {
-  const { archiveTask, setTab, updateNotes, toggleSubtask, removeSubtask, addSubtask, setTimerRunning, tickTimer, resetTimer, adjustTimer, setEnergy, addPenItem, removePenItem } = useStore();
+  const { archiveTask, setTab, updateNotes, toggleSubtask, removeSubtask, addSubtask, setTimerRunning, tickTimer, resetTimer, adjustTimer, setEnergy, addPenItem, removePenItem, promotePenItem } = useStore();
   const subtaskInputRef = useRef<HTMLInputElement>(null);
   const penInputRef = useRef<HTMLInputElement>(null);
 
@@ -35,6 +35,11 @@ export const TileContent: React.FC<{ task: Task }> = ({ task }) => {
             task.items.map((item, i) => (
               <div key={i} className="flex items-center gap-[7px] text-[11.5px] bg-elevated p-[6px_8px] rounded-[7px] mb-[5px]">
                 <span>📥</span><span style={{ flex: 1 }}>{item}</span>
+                <button
+                  className="h-4 px-1.5 rounded-[5px] border-none bg-transparent text-muted cursor-pointer text-[9px] font-mono tracking-wide shrink-0 hover:bg-elevated-hi hover:text-teal transition-colors"
+                  title="Promote to grid as 1×1 admin task"
+                  onClick={() => promotePenItem(task.id, i)}
+                >↗</button>
                 <button className="w-4 h-4 rounded-[5px] border-none bg-transparent text-muted cursor-pointer grid place-items-center text-[10px] transition-colors duration-150 shrink-0 hover:bg-elevated-hi hover:text-text" onClick={() => removePenItem(task.id, i)}>✕</button>
               </div>
             ))

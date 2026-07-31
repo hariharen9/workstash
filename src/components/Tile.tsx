@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { useStore, type Task } from '../store';
+import React, { useState, useEffect, useRef } from 'react';
+import { useStore, type Task, type TaskCategory } from '../store';
 import { TileContent } from './TileContent';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { GlowCard } from './GlowCard';
 
 const DragIcon = () => (
   <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
@@ -15,24 +16,51 @@ const DragIcon = () => (
   </svg>
 );
 
-import { GlowCard } from './GlowCard';
+const CATEGORIES: { id: TaskCategory; label: string }[] = [
+  { id: 'focus', label: 'Deep Work' },
+  { id: 'fire', label: 'Firefighter' },
+  { id: 'admin', label: 'Admin' },
+];
 
 export const Tile: React.FC<{ task: Task }> = ({ task }) => {
-  const { archiveTask, openShutter, setTileSize, tasks, mode, setFocusedTask, addToast, setIsHoveringTask, gridLayout } = useStore();
-  
+  const { archiveTask, openShutter, setTileSize, tasks, mode, setFocusedTask, addToast, setIsHoveringTask, gridLayout, updateTitle, updateCategory } = useStore();
+
   const TOTAL_CELLS = gridLayout === '8x4' ? 32 : gridLayout === '6x5' ? 30 : 24;
 
   const [isCompleting, setIsCompleting] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isEntering, setIsEntering] = useState(true);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [draftTitle, setDraftTitle] = useState(task.title);
+  const [catMenuOpen, setCatMenuOpen] = useState(false);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const catMenuRef = useRef<HTMLDivElement>(null);
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
 
   useEffect(() => {
-    // Remove the entering class after the animation finishes
     const t = setTimeout(() => setIsEntering(false), 400);
     return () => clearTimeout(t);
   }, []);
+
+  useEffect(() => {
+    if (!isEditingTitle) setDraftTitle(task.title);
+  }, [task.title, isEditingTitle]);
+
+  useEffect(() => {
+    if (isEditingTitle) titleInputRef.current?.focus();
+  }, [isEditingTitle]);
+
+  useEffect(() => {
+    if (!catMenuOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      if (catMenuRef.current && !catMenuRef.current.contains(e.target as Node)) {
+        setCatMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [catMenuOpen]);
 
   useEffect(() => {
     if (isHovered && !task.isPen) {
@@ -51,6 +79,16 @@ export const Tile: React.FC<{ task: Task }> = ({ task }) => {
       };
     }
   }, [isHovered, task.id, openShutter, task.isPen, setIsHoveringTask]);
+
+  const commitTitle = () => {
+    const trimmed = draftTitle.trim();
+    if (trimmed && trimmed !== task.title) {
+      updateTitle(task.id, trimmed);
+    } else {
+      setDraftTitle(task.title);
+    }
+    setIsEditingTitle(false);
+  };
 
   const handleArchive = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -73,7 +111,7 @@ export const Tile: React.FC<{ task: Task }> = ({ task }) => {
   };
 
   const handleDoubleClick = () => {
-    if (mode === 'deep') {
+    if (mode === 'deep' && !isEditingTitle) {
       setFocusedTask(task.id);
     }
   };
@@ -115,6 +153,46 @@ export const Tile: React.FC<{ task: Task }> = ({ task }) => {
     zIndex: isDragging ? 50 : 1,
   };
 
+  const catBadge = (
+    <div className="relative" ref={catMenuRef}>
+      <button
+        type="button"
+        className={`text-[9px] font-mono p-[2px_6px] rounded-[5px] tracking-[0.03em] cursor-pointer border-none transition-opacity hover:opacity-80 ${
+          task.cat === 'focus' ? 'bg-violet-dim text-violet' :
+          task.cat === 'fire' ? 'bg-amber-dim text-amber' :
+          'bg-teal-dim text-teal'
+        }`}
+        title="Change category"
+        onClick={(e) => {
+          e.stopPropagation();
+          setCatMenuOpen(o => !o);
+        }}
+      >
+        {task.cat === 'focus' ? 'DEEP WORK' : task.cat === 'fire' ? 'FIREFIGHT' : 'ADMIN'}
+      </button>
+      {catMenuOpen && (
+        <div className="absolute left-0 bottom-full mb-1 z-30 bg-elevated-hi border border-line rounded-[8px] p-1 shadow-toast min-w-[120px]">
+          {CATEGORIES.map(c => (
+            <button
+              key={c.id}
+              type="button"
+              className={`w-full text-left text-[11px] py-1.5 px-2 rounded-[6px] border-none cursor-pointer font-sans ${
+                task.cat === c.id ? 'bg-elevated text-text' : 'bg-transparent text-muted hover:text-text hover:bg-elevated'
+              }`}
+              onClick={(e) => {
+                e.stopPropagation();
+                updateCategory(task.id, c.id);
+                setCatMenuOpen(false);
+              }}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <GlowCard
       ref={setNodeRef}
@@ -136,7 +214,36 @@ export const Tile: React.FC<{ task: Task }> = ({ task }) => {
       ) : (
         <>
           <div className="flex items-start justify-between gap-2">
-            <p className="font-display font-semibold text-[13.5px] leading-1.3 tracking-[-0.01em] m-0 break-words">{task.title}</p>
+            {isEditingTitle ? (
+              <input
+                ref={titleInputRef}
+                className="font-display font-semibold text-[13.5px] leading-1.3 tracking-[-0.01em] m-0 flex-1 min-w-0 bg-elevated border border-line rounded-[6px] px-1.5 py-0.5 text-text outline-none focus:border-faint"
+                value={draftTitle}
+                maxLength={80}
+                onChange={(e) => setDraftTitle(e.target.value)}
+                onBlur={commitTitle}
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                  if (e.key === 'Enter') commitTitle();
+                  if (e.key === 'Escape') {
+                    setDraftTitle(task.title);
+                    setIsEditingTitle(false);
+                  }
+                }}
+              />
+            ) : (
+              <p
+                className="font-display font-semibold text-[13.5px] leading-1.3 tracking-[-0.01em] m-0 break-words cursor-text hover:text-violet transition-colors"
+                title="Click to rename"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsEditingTitle(true);
+                }}
+              >
+                {task.title}
+              </p>
+            )}
             <div className="flex items-center gap-1.5 shrink-0">
               <div {...attributes} {...listeners} className="w-5 h-5 rounded-[6px] grid place-items-center cursor-grab text-muted hover:bg-elevated hover:text-text transition-colors" title="Drag to reorder"><DragIcon /></div>
               <button className="w-5 h-5 rounded-[6px] border-none bg-transparent text-muted cursor-pointer grid place-items-center text-sm transition-colors duration-150 shrink-0 hover:bg-elevated hover:text-text" title="Focus Shutter (F)" onClick={(e) => { e.stopPropagation(); openShutter(task.id); }}>⤢</button>
@@ -147,9 +254,7 @@ export const Tile: React.FC<{ task: Task }> = ({ task }) => {
             <TileContent task={task} />
           </div>
           <div className="flex items-center justify-between mt-2 gap-1.5 flex-wrap">
-            {task.cat === 'focus' && <span className="text-[9px] font-mono p-[2px_6px] rounded-[5px] tracking-[0.03em] bg-violet-dim text-violet">DEEP WORK</span>}
-            {task.cat === 'fire' && <span className="text-[9px] font-mono p-[2px_6px] rounded-[5px] tracking-[0.03em] bg-amber-dim text-amber">FIREFIGHT</span>}
-            {task.cat === 'admin' && <span className="text-[9px] font-mono p-[2px_6px] rounded-[5px] tracking-[0.03em] bg-teal-dim text-teal">ADMIN</span>}
+            {catBadge}
             <div className="flex gap-[3px]">
               {sizeOptions.map(opt => (
                 <button
