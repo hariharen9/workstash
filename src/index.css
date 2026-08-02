@@ -301,11 +301,58 @@
 
   .size-ribbon {
     font-family: var(--font-mono);
-    font-size: 0.625rem;
+    font-size: 0.6rem;
     font-weight: 600;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
     color: var(--color-faint);
+    transition: opacity 0.15s ease;
+  }
+
+  /* Corner drag-resize handle */
+  .tile-resize-handle {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 1.35rem;
+    height: 1.35rem;
+    cursor: nwse-resize;
+    display: grid;
+    place-items: end;
+    padding: 0.28rem;
+    color: var(--color-faint);
+    opacity: 0;
+    transition: opacity 0.15s ease, color 0.15s ease;
+    z-index: 20;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .tile-resize-handle:hover {
+    color: var(--color-muted);
+  }
+  .tile-resize-handle.is-active {
+    opacity: 1 !important;
+    color: var(--color-violet);
+  }
+
+  /* Floating W×H ghost label shown during corner drag */
+  .size-ghost {
+    position: fixed;
+    background: var(--color-elevated-hi);
+    border: 1px solid var(--color-violet);
+    color: var(--color-text);
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.4rem;
+    pointer-events: none;
+    z-index: 9999;
+    letter-spacing: 0.06em;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5), 0 0 0 1px var(--color-violet);
+    transform: translate(14px, 14px);
+    white-space: nowrap;
   }
 
   /* GlowCard Styles */

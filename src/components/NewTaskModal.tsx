@@ -2,30 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { useStore, type TaskCategory, occupiedCells } from '../store';
 import { GlowCard } from './GlowCard';
 
-const sizes = [
-  { w: 1, h: 1, label: '1×1', hint: 'Micro' },
-  { w: 2, h: 1, label: '2×1', hint: 'List' },
-  { w: 2, h: 2, label: '2×2', hint: 'Focus' },
-  { w: 3, h: 2, label: '3×2', hint: 'Deep' },
-] as const;
-
-const cats: { id: TaskCategory; label: string }[] = [
-  { id: 'focus', label: 'Deep Focus' },
-  { id: 'fire', label: 'Urgent' },
-  { id: 'admin', label: 'Quick Admin' },
+const cats: { id: TaskCategory; label: string; desc: string; color: string }[] = [
+  { id: 'focus', label: 'Deep Focus', desc: 'Complex work requiring concentration', color: 'violet' },
+  { id: 'fire', label: 'Urgent', desc: 'High priority, needs immediate attention', color: 'amber' },
+  { id: 'admin', label: 'Quick Admin', desc: 'Small tasks, emails, approvals', color: 'teal' },
 ];
 
 export const NewTaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const { addTile, tasks, addToast, gridLayout } = useStore();
   const TOTAL_CELLS = gridLayout === '8x4' ? 32 : gridLayout === '6x5' ? 30 : 24;
   const [title, setTitle] = useState('');
-  const [size, setSize] = useState({ w: 2, h: 2 });
   const [cat, setCat] = useState<TaskCategory>('focus');
 
   useEffect(() => {
     if (isOpen) {
       setTitle('');
-      setSize({ w: 2, h: 2 });
       setCat('focus');
     }
   }, [isOpen]);
@@ -39,25 +30,41 @@ export const NewTaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
     }
 
     const used = occupiedCells(tasks);
-    const need = size.w * size.h;
 
-    if (used + need > TOTAL_CELLS) {
-      addToast('Not enough grid space for that size', '⚠');
+    if (used + 2 <= TOTAL_CELLS) {
+      addTile(title.trim(), cat, 2, 1);
+    } else if (used + 1 <= TOTAL_CELLS) {
+      addTile(title.trim(), cat, 1, 1);
+      addToast('Grid tight — created as 1×1. Drag the corner to resize.', '⚡');
+    } else {
+      addToast('Grid is full — archive or resize a block first', '⚠');
       return;
     }
 
-    addTile(title.trim(), cat, size.w, size.h);
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 bg-[#05070C]/70 backdrop-blur-md z-[50] flex items-center justify-center p-4" onClick={onClose} data-lenis-prevent="true">
-      <GlowCard customSize glowColor="blue" className="w-full max-w-[440px] bg-surface rounded-2xl p-6 animate-tileIn shadow-toast" onClick={e => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 bg-[#05070C]/70 backdrop-blur-md z-[50] flex items-center justify-center p-4"
+      onClick={onClose}
+      data-lenis-prevent="true"
+    >
+      <GlowCard
+        customSize
+        glowColor="blue"
+        className="w-full max-w-[420px] bg-surface rounded-2xl p-6 animate-tileIn shadow-toast"
+        onClick={e => e.stopPropagation()}
+      >
         <h3 className="m-0 mb-1 font-display text-[1.2rem] font-semibold tracking-[-0.03em]">New Task</h3>
-        <p className="m-0 mb-5 text-[0.8125rem] text-muted">Size is cognitive weight — keep the grid honest.</p>
+        <p className="m-0 mb-5 text-[0.8125rem] text-muted">
+          Drag the corner of any block to resize it on the grid.
+        </p>
 
-        <div className="mb-4">
-          <label className="text-[0.72rem] text-muted block mb-2 font-semibold tracking-[0.04em] uppercase">Title</label>
+        <div className="mb-5">
+          <label className="text-[0.72rem] text-muted block mb-2 font-semibold tracking-[0.04em] uppercase">
+            Title
+          </label>
           <input
             className="tile-field !text-[0.9375rem] !py-3"
             type="text"
@@ -68,46 +75,35 @@ export const NewTaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
             autoFocus
             onKeyDown={e => {
               if (e.key === 'Enter') handleCreate();
+              if (e.key === 'Escape') onClose();
             }}
           />
         </div>
 
-        <div className="mb-4">
-          <label className="text-[0.72rem] text-muted block mb-2 font-semibold tracking-[0.04em] uppercase">Cognitive weight</label>
-          <div className="grid grid-cols-4 gap-2">
-            {sizes.map(s => (
-              <button
-                key={s.label}
-                type="button"
-                className={`text-center py-3 px-1 rounded-xl border cursor-pointer transition-all duration-150 ${
-                  size.w === s.w && size.h === s.h
-                    ? 'border-faint text-text bg-elevated-hi'
-                    : 'border-line bg-elevated text-muted hover:border-faint hover:text-text'
-                }`}
-                onClick={() => setSize({ w: s.w, h: s.h })}
-              >
-                <div className="font-display font-semibold text-[0.9375rem] tracking-tight">{s.label}</div>
-                <div className="text-[0.7rem] mt-1 opacity-70 font-medium">{s.hint}</div>
-              </button>
-            ))}
-          </div>
-        </div>
-
         <div className="mb-2">
-          <label className="text-[0.72rem] text-muted block mb-2 font-semibold tracking-[0.04em] uppercase">Category</label>
-          <div className="grid grid-cols-3 gap-2">
+          <label className="text-[0.72rem] text-muted block mb-2 font-semibold tracking-[0.04em] uppercase">
+            Category
+          </label>
+          <div className="flex flex-col gap-2">
             {cats.map(c => (
               <button
                 key={c.id}
                 type="button"
-                className={`text-center py-2.5 px-2 rounded-xl border cursor-pointer text-[0.8125rem] font-semibold transition-all duration-150 ${
+                className={`text-left py-2.5 px-3.5 rounded-xl border cursor-pointer transition-all duration-150 ${
                   cat === c.id
                     ? 'border-faint text-text bg-elevated-hi'
                     : 'border-line bg-elevated text-muted hover:border-faint hover:text-text'
                 }`}
                 onClick={() => setCat(c.id)}
               >
-                {c.label}
+                <div className="flex items-center gap-2">
+                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                    c.color === 'violet' ? 'bg-violet' :
+                    c.color === 'amber' ? 'bg-amber' : 'bg-teal'
+                  }`} />
+                  <span className="text-[0.8125rem] font-semibold">{c.label}</span>
+                </div>
+                <p className="text-[0.72rem] opacity-55 mt-0.5 m-0 ml-3.5 leading-snug">{c.desc}</p>
               </button>
             ))}
           </div>
@@ -133,3 +129,4 @@ export const NewTaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
     </div>
   );
 };
+

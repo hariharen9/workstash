@@ -155,20 +155,33 @@ function applyTopology(tasks: Task[], mode: TopologyMode, focusedTaskId: string 
 
 function createSeedTasks(): Task[] {
   return [
+    // 3×2 — split-pane deep focus workspace
     { id: uid(), title: 'Design token audit for WorkStash', cat: 'focus', w: 3, h: 2, naturalW: 3, naturalH: 2, type: 'deep',
       notes: '// reconcile elevated vs elevated-hi\n// check contrast on amber badges', subtasks: [
         { id: uid(), text: 'Pull palette into CSS vars', done: true },
         { id: uid(), text: 'Recheck focus ring contrast', done: false },
       ], timer: { total: 1500, remaining: 1500, running: false }, energy: 3, completed: false, tab: 'notes' },
+    // 2×2 — tabbed urgent workspace
     { id: uid(), title: 'Prod error spike — /checkout 500s', cat: 'fire', w: 2, h: 2, naturalW: 2, naturalH: 2, type: 'focus',
       notes: 'TypeError: Cannot read properties of undefined\n  at validateCart (checkout.ts:88)', subtasks: [
         { id: uid(), text: 'Reproduce locally', done: false },
+        { id: uid(), text: 'Check deploy logs', done: false },
       ], timer: { total: 900, remaining: 900, running: false }, energy: 4, completed: false, tab: 'notes' },
-    { id: uid(), title: 'Review Priya\'s PR #482', cat: 'focus', w: 2, h: 1, naturalW: 2, naturalH: 1, type: 'standard',
-      notes: '', subtasks: [{ id: uid(), text: 'Check migration rollback', done: false }], energy: 2, completed: false },
+    // 3×1 — slim wide checklist strip
+    { id: uid(), title: 'Sprint planning prep', cat: 'focus', w: 3, h: 1, naturalW: 3, naturalH: 1, type: 'standard',
+      notes: '', subtasks: [
+        { id: uid(), text: 'Review backlog items', done: false },
+        { id: uid(), text: 'Estimate story points', done: false },
+        { id: uid(), text: 'Draft sprint goal', done: false },
+      ], energy: 2, completed: false },
+    // 1×2 — tall narrow column
+    { id: uid(), title: 'Review PR #482', cat: 'focus', w: 1, h: 2, naturalW: 1, naturalH: 2, type: 'standard',
+      notes: '', subtasks: [
+        { id: uid(), text: 'Check migration rollback', done: false },
+        { id: uid(), text: 'Test edge cases', done: false },
+      ], energy: 2, completed: false },
     { id: uid(), title: 'Approve expense report', cat: 'admin', w: 1, h: 1, naturalW: 1, naturalH: 1, type: 'admin', completed: false },
     { id: uid(), title: 'Reply: vendor contract q\'s', cat: 'admin', w: 1, h: 1, naturalW: 1, naturalH: 1, type: 'admin', completed: false },
-    { id: uid(), title: 'Standup notes', cat: 'admin', w: 1, h: 1, naturalW: 1, naturalH: 1, type: 'admin', completed: false },
     { id: uid(), title: 'Book flight for offsite', cat: 'admin', w: 1, h: 1, naturalW: 1, naturalH: 1, type: 'admin', completed: false },
     { id: uid(), title: 'Holding Pen', cat: 'pen', w: 2, h: 1, naturalW: 2, naturalH: 1, type: 'pen', isPen: true, items: ['Slack: check w/ Dana re: staging creds'], completed: false },
   ];
@@ -227,9 +240,8 @@ export const useStore = create<AppState>()(
         toasts: state.toasts.filter(t => t.id !== id)
       })),
 
-      addTile: (title, cat, w, h) => set((state) => {
-        const need = w * h;
-        const type = need <= 1 ? 'admin' : need <= 2 ? 'standard' : need <= 4 ? 'focus' : 'deep';
+      addTile: (title, cat, w = 2, h = 1) => set((state) => {
+        const type = 'task';
         const newTask: Task = {
           id: uid(), title, cat, w, h, naturalW: w, naturalH: h, type,
           notes: '', subtasks: [], timer: { total: 1500, remaining: 1500, running: false },
