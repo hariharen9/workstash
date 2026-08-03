@@ -10,6 +10,8 @@ import { SettingsModal } from './components/SettingsModal';
 import { HelpModal } from './components/HelpModal';
 import { ArchiveModal } from './components/ArchiveModal';
 import { ActiveTimerWidget } from './components/ActiveTimerWidget';
+import { CommandPalette } from './components/CommandPalette';
+import { MorningIntent } from './components/MorningIntent';
 import { useStore } from './store';
 
 function App() {
@@ -18,7 +20,7 @@ function App() {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
   const [isDefragging, setIsDefragging] = useState(false);
-  const { runDefrag } = useStore();
+  const { runDefrag, undo, redo, undoStack, redoStack } = useStore();
 
   useEffect(() => {
     const lenis = new Lenis({
@@ -39,6 +41,47 @@ function App() {
 
     return () => {
       lenis.destroy();
+    };
+  }, []);
+
+  // Undo/redo keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
+
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        undo();
+        useStore.getState().addToast(`Undone — ${undoStack.length - 1} step${undoStack.length - 1 !== 1 ? 's' : ''} remaining`, '↩');
+      }
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        redo();
+        useStore.getState().addToast(`Redone — ${redoStack.length} step${redoStack.length !== 1 ? 's' : ''} ahead`, '↪');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [undo, redo, undoStack.length, redoStack.length]);
+
+  // Request notification permission on first interaction
+  useEffect(() => {
+    const request = () => {
+      useStore.getState().requestNotificationPermission();
+    };
+    const handleInteraction = () => {
+      request();
+      window.removeEventListener('click', handleInteraction);
+      window.removeEventListener('keydown', handleInteraction);
+    };
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      window.addEventListener('click', handleInteraction);
+      window.addEventListener('keydown', handleInteraction);
+    }
+    return () => {
+      window.removeEventListener('click', handleInteraction);
+      window.removeEventListener('keydown', handleInteraction);
     };
   }, []);
 
@@ -90,6 +133,9 @@ function App() {
       />
 
       <ActiveTimerWidget />
+
+      <CommandPalette />
+      <MorningIntent />
 
       <ToastContainer />
     </>

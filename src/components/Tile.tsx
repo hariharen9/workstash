@@ -43,7 +43,7 @@ const ResizeGripIcon = () => (
   </svg>
 );
 
-export const Tile: React.FC<{ task: Task }> = ({ task }) => {
+export const Tile: React.FC<{ task: Task; isBeingDragged?: boolean; isDragTarget?: boolean }> = ({ task, isBeingDragged = false, isDragTarget = false }) => {
   const { archiveTask, openShutter, setTileSize, tasks, mode, setFocusedTask, addToast, setIsHoveringTask, gridLayout, updateTitle, updateCategory } = useStore();
 
   const TOTAL_CELLS = gridLayout === '8x4' ? 32 : gridLayout === '6x5' ? 30 : 24;
@@ -222,7 +222,11 @@ export const Tile: React.FC<{ task: Task }> = ({ task }) => {
     gridColumn: `span ${task.w}`,
     gridRow: `span ${task.h}`,
     transform: CSS.Transform.toString(transform),
-    transition: transition || 'opacity 0.45s cubic-bezier(0.3, 0.9, 0.3, 1), transform 0.45s cubic-bezier(0.3, 0.9, 0.3, 1)',
+    // When this tile is being displaced by the drag, snap-dodge with a tight spring (200ms).
+    // When it IS the dragged tile, no transition needed — the DragOverlay handles motion.
+    transition: isDragging
+      ? 'none'
+      : (transition || 'transform 200ms cubic-bezier(0.25, 1, 0.5, 1)'),
     zIndex: isDragging ? 50 : 1,
   };
 
@@ -354,18 +358,29 @@ export const Tile: React.FC<{ task: Task }> = ({ task }) => {
       ref={combinedRef}
       customSize={true}
       data-lenis-prevent="true"
+      data-task-id={task.id}
       glowColor={glowColorMap[task.cat as keyof typeof glowColorMap] || 'blue'}
       className={`bg-surface/95 shadow-tile overflow-hidden flex flex-col transition-[background,box-shadow,opacity,filter] duration-300 min-h-0 relative ${catClass} ${
         isMicro ? 'p-3' : isLarge ? 'p-4' : 'p-3.5'
       } ${
         task.parked ? 'opacity-[0.38] saturate-[0.45]' : ''
       } ${isCompleting ? 'animate-completePop' : ''} ${isEntering ? 'animate-tileIn' : ''} ${
-        isDragging ? 'opacity-55 ring-2 ring-violet/70 shadow-xl scale-[1.015]' : ''
-      } ${isHovered && !task.parked ? 'bg-elevated/40' : ''} ${
+        // Ghost slot: the original position while DragOverlay floats above
+        isBeingDragged
+          ? 'opacity-[0.28] scale-[0.97] ring-2 ring-violet/30 ring-inset saturate-[0.3] pointer-events-none cursor-default'
+          : isDragging
+          ? 'opacity-55 ring-2 ring-violet/70 shadow-xl scale-[1.015]'
+          : ''
+      } ${
+        // Drop target highlight
+        isDragTarget ? 'ring-2 ring-violet/60 bg-violet/5' : ''
+      } ${
+        isHovered && !task.parked && !isBeingDragged ? 'bg-elevated/40' : ''
+      } ${
         isSlimWide ? 'border-l-[3px] border-l-teal/40' : ''
       } ${isLarge ? 'ring-1 ring-violet/15' : ''}`}
       style={style}
-      onMouseEnter={() => setIsHovered(true)}
+      onMouseEnter={() => !isBeingDragged && setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onDoubleClick={handleDoubleClick}
     >

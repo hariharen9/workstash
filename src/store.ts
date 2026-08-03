@@ -4,6 +4,14 @@ import { persist } from 'zustand/middleware';
 export type TaskCategory = 'focus' | 'fire' | 'admin' | 'pen';
 export type TopologyMode = 'normal' | 'deep' | 'fire' | 'admin';
 
+/** Snapshot of undoable state */
+interface Snapshot {
+  tasks: Task[];
+  mode: TopologyMode;
+  focusedTaskId: string | null;
+  gridLayout: string;
+}
+
 export interface Subtask {
   id: string;
   text: string;
@@ -65,6 +73,18 @@ interface AppState {
   focusSessions: FocusSession[];
   gridLayout: GridLayout;
 
+  morningIntentDate: string | null;
+  setMorningIntentShown: () => void;
+
+  undoStack: Snapshot[];
+  redoStack: Snapshot[];
+  pushSnapshot: () => void;
+  undo: () => void;
+  redo: () => void;
+
+  notificationPermission: NotificationPermission;
+  requestNotificationPermission: () => void;
+
   setGridLayout: (layout: GridLayout) => void;
   logActivity: (msg: string, type: ActivityLog['type']) => void;
 
@@ -105,7 +125,7 @@ const STORAGE_KEY = 'workstash-v1';
 
 const uid = () => Math.random().toString(36).slice(2, 9);
 
-const todayKey = () => {
+export const todayKey = () => {
   const d = new Date();
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -197,6 +217,10 @@ function buildInitialState() {
     shutterOpen: null as string | null,
     toasts: [] as Toast[],
     gridLayout: '6x4' as GridLayout,
+    morningIntentDate: null,
+    undoStack: [] as Snapshot[],
+    redoStack: [] as Snapshot[],
+    notificationPermission: (typeof Notification !== 'undefined' ? Notification.permission : 'denied') as NotificationPermission,
     activityLogs: [
       { id: uid(), time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), msg: 'Workspace initialized', type: 'system' as const }
     ],
@@ -211,6 +235,71 @@ export const useStore = create<AppState>()(
   persist(
     (set, get) => ({
       ...initial,
+
+      pushSnapshot: () => {
+        const state = get();
+        const snapshot: Snapshot = {
+          tasks: JSON.parse(JSON.stringify(state.tasks)),
+          mode: state.mode,
+          focusedTaskId: state.focusedTaskId,
+          gridLayout: state.gridLayout,
+        };
+        set({ undoStack: [...state.undoStack.slice(-49), snapshot], redoStack: [] });
+      },
+
+      undo: () => {
+        const state = get();
+        if (state.undoStack.length === 0) return;
+        const prev = state.undoStack[state.undoStack.length - 1];
+        const current: Snapshot = {
+          tasks: JSON.parse(JSON.stringify(state.tasks)),
+          mode: state.mode,
+          focusedTaskId: state.focusedTaskId,
+          gridLayout: state.gridLayout,
+        };
+        set({
+          undoStack: state.undoStack.slice(0, -1),
+          redoStack: [...state.redoStack, current],
+          tasks: prev.tasks,
+          mode: prev.mode,
+          focusedTaskId: prev.focusedTaskId,
+          gridLayout: prev.gridLayout as GridLayout,
+        });
+      },
+
+      redo: () => {
+        const state = get();
+        if (state.redoStack.length === 0) return;
+        const next = state.redoStack[state.redoStack.length - 1];
+        const current: Snapshot = {
+          tasks: JSON.parse(JSON.stringify(state.tasks)),
+          mode: state.mode,
+          focusedTaskId: state.focusedTaskId,
+          gridLayout: state.gridLayout,
+        };
+        set({
+          redoStack: state.redoStack.slice(0, -1),
+          undoStack: [...state.undoStack, current],
+          tasks: next.tasks,
+          mode: next.mode,
+          focusedTaskId: next.focusedTaskId,
+          gridLayout: next.gridLayout as GridLayout,
+        });
+      },
+
+      requestNotificationPermission: () => {
+        if (typeof Notification === 'undefined') return;
+        if (Notification.permission === 'default') {
+          Notification.requestPermission().then((perm) => {
+            set({ notificationPermission: perm });
+          });
+        }
+      },
+
+      setMorningIntentShown: () => {
+        const today = todayKey();
+        set({ morningIntentDate: today });
+      },
 
       setIsHoveringTask: (val) => set({ isHoveringTask: val }),
 
@@ -241,6 +330,7 @@ export const useStore = create<AppState>()(
       })),
 
       addTile: (title, cat, w = 2, h = 1) => set((state) => {
+        get().pushSnapshot();
         const type = 'task';
         const newTask: Task = {
           id: uid(), title, cat, w, h, naturalW: w, naturalH: h, type,
@@ -254,6 +344,7 @@ export const useStore = create<AppState>()(
       updateTitle: (id, title) => {
         const trimmed = title.trim();
         if (!trimmed) return;
+        get().pushSnapshot();
         set((state) => ({
           tasks: state.tasks.map(t => t.id === id ? { ...t, title: trimmed } : t)
         }));
@@ -263,6 +354,7 @@ export const useStore = create<AppState>()(
         if (cat === 'pen') return;
         const task = get().tasks.find(t => t.id === id);
         if (!task || task.isPen) return;
+        get().pushSnapshot();
         set((state) => ({
           tasks: state.tasks.map(t => t.id === id ? { ...t, cat } : t)
         }));
@@ -272,6 +364,7 @@ export const useStore = create<AppState>()(
       archiveTask: (id) => {
         const task = get().tasks.find(t => t.id === id);
         if (task) {
+          get().pushSnapshot();
           get().logActivity(`Archived "${task.title}"`, task.cat === 'focus' ? 'focus' : task.cat === 'fire' ? 'fire' : 'admin');
         }
         set((state) => ({
@@ -292,7 +385,6 @@ export const useStore = create<AppState>()(
         let restoredH = task.naturalH;
 
         if (used + taskCells > TOTAL_CELLS) {
-          // Try 1×1
           if (used + 1 > TOTAL_CELLS) {
             get().addToast('Grid full — archive or resize a block first', '⚠');
             return;
@@ -304,6 +396,7 @@ export const useStore = create<AppState>()(
           get().addToast(`Restored "${task.title}"`, '↩');
         }
 
+        get().pushSnapshot();
         get().logActivity(`Restored "${task.title}"`, task.cat === 'focus' ? 'focus' : task.cat === 'fire' ? 'fire' : 'admin');
         set((state) => ({
           tasks: state.tasks.map(t => t.id === id ? {
@@ -318,6 +411,7 @@ export const useStore = create<AppState>()(
       },
 
       changeTopology: (mode) => set((state) => {
+        get().pushSnapshot();
         const nextTasks = JSON.parse(JSON.stringify(state.tasks));
         let nextFocusId = mode !== 'deep' ? null : state.focusedTaskId;
         const result = applyTopology(nextTasks, mode, nextFocusId, state.gridLayout);
@@ -333,6 +427,7 @@ export const useStore = create<AppState>()(
 
       setFocusedTask: (id) => set((state) => {
         if (state.mode !== 'deep') return {};
+        get().pushSnapshot();
         const nextTasks = JSON.parse(JSON.stringify(state.tasks));
         const result = applyTopology(nextTasks, 'deep', id, state.gridLayout);
         return { tasks: result.tasks, focusedTaskId: id };
@@ -341,9 +436,12 @@ export const useStore = create<AppState>()(
       openShutter: (id) => set({ shutterOpen: id }),
       closeShutter: () => set({ shutterOpen: null }),
 
-      setTileSize: (id, w, h) => set((state) => ({
-        tasks: state.tasks.map(t => t.id === id ? { ...t, w, h, naturalW: w, naturalH: h } : t)
-      })),
+      setTileSize: (id, w, h) => set((state) => {
+        get().pushSnapshot();
+        return {
+          tasks: state.tasks.map(t => t.id === id ? { ...t, w, h, naturalW: w, naturalH: h } : t)
+        };
+      }),
 
       setTab: (id, tab) => set((state) => ({
         tasks: state.tasks.map(t => t.id === id ? { ...t, tab } : t)
@@ -417,6 +515,13 @@ export const useStore = create<AppState>()(
           setTimeout(() => {
             get().addToast(`Timer done — "${session.taskTitle}"`, '⏰');
             get().logActivity(`Completed timer for "${session.taskTitle}"`, 'focus');
+            // Browser notification
+            if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+              new Notification('Pomodoro complete — WorkStash', {
+                body: `"${session.taskTitle}" — ${Math.floor(session.durationSeconds / 60)}m finished`,
+                icon: '/favicon.svg',
+              });
+            }
           }, 0);
           return {
             tasks: newTasks,
@@ -468,23 +573,29 @@ export const useStore = create<AppState>()(
         tasks: state.tasks.map(t => t.id === id ? { ...t, energy: val } : t)
       })),
 
-      addPenItem: (id, text) => set((state) => ({
-        tasks: state.tasks.map(t => t.id === id ? {
-          ...t,
-          items: [...(t.items || []), text]
-        } : t)
-      })),
+      addPenItem: (id, text) => set((state) => {
+        get().pushSnapshot();
+        return {
+          tasks: state.tasks.map(t => t.id === id ? {
+            ...t,
+            items: [...(t.items || []), text]
+          } : t)
+        };
+      }),
 
-      removePenItem: (id, index) => set((state) => ({
-        tasks: state.tasks.map(t => {
-          if (t.id === id && t.items) {
-            const newItems = [...t.items];
-            newItems.splice(index, 1);
-            return { ...t, items: newItems };
-          }
-          return t;
-        })
-      })),
+      removePenItem: (id, index) => set((state) => {
+        get().pushSnapshot();
+        return {
+          tasks: state.tasks.map(t => {
+            if (t.id === id && t.items) {
+              const newItems = [...t.items];
+              newItems.splice(index, 1);
+              return { ...t, items: newItems };
+            }
+            return t;
+          })
+        };
+      }),
 
       promotePenItem: (penId, index) => {
         const pen = get().tasks.find(t => t.id === penId && t.isPen);
@@ -498,12 +609,14 @@ export const useStore = create<AppState>()(
           return;
         }
 
+        get().pushSnapshot();
         get().removePenItem(penId, index);
         get().addTile(text, 'admin', 1, 1);
         get().addToast(`Promoted to grid: "${text}"`, '↗');
       },
 
       runDefrag: () => set((state) => {
+        get().pushSnapshot();
         const completedCount = state.tasks.filter(t => t.completed).length;
         const unfinished = state.tasks.filter(t => !t.completed);
         const result = applyTopology(unfinished, 'normal', null, state.gridLayout);
@@ -513,6 +626,7 @@ export const useStore = create<AppState>()(
 
       reorderTasks: (sourceId, targetId) => set((state) => {
         if (sourceId === targetId) return state;
+        get().pushSnapshot();
         const tasks = [...state.tasks];
         const sourceIdx = tasks.findIndex(t => t.id === sourceId);
         const targetIdx = tasks.findIndex(t => t.id === targetId);
@@ -548,6 +662,8 @@ export const useStore = create<AppState>()(
         activityLogs: state.activityLogs.slice(0, 100),
         focusSessions: state.focusSessions.slice(0, 500),
         gridLayout: state.gridLayout,
+        morningIntentDate: state.morningIntentDate,
+        notificationPermission: state.notificationPermission,
       }),
       merge: (persisted, current) => {
         const p = persisted as Partial<AppState> | undefined;
@@ -565,6 +681,8 @@ export const useStore = create<AppState>()(
           toasts: [],
           shutterOpen: null,
           isHoveringTask: false,
+          undoStack: [],
+          redoStack: [],
           focusSessions: Array.isArray(p.focusSessions) ? p.focusSessions : [],
           activityLogs: Array.isArray(p.activityLogs) ? p.activityLogs : current.activityLogs,
         };

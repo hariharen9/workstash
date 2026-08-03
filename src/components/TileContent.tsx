@@ -1,4 +1,5 @@
-﻿import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { X } from 'lucide-react';
 import { useStore, type Task } from '../store';
 import { TimerControls } from './TimerControls';
 
@@ -31,12 +32,12 @@ export const TileContent: React.FC<{ task: Task; disableTick?: boolean }> = ({ t
 
   if (task.isPen) return null;
 
-  // â”€â”€ Responsive layout matrix â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // --- Responsive layout matrix ---------------------------------
   const isMicro    = task.w === 1 && task.h === 1;
   const isSlimWide = task.w >= 2 && task.h === 1;    // horizontal checklist strip
   const isSlimTall = task.w === 1 && task.h >= 2;    // vertical checklist column (NEW)
   const isLarge    = task.w >= 3 && task.h >= 2;     // side-by-side split pane
-  // default: wâ‰¥2 && hâ‰¥2 (and not large) â†’ tabbed interface
+  // default: w >= 2 && h >= 2 (and not large) -> tabbed interface
 
   if (isMicro) return null;
 
@@ -82,10 +83,11 @@ export const TileContent: React.FC<{ task: Task; disableTick?: boolean }> = ({ t
                 </span>
                 <button
                   type="button"
-                  className="tile-action !w-6 !h-6 opacity-0 group-hover:opacity-100"
+                  className="tile-action !w-6 !h-6 opacity-0 group-hover:opacity-100 flex items-center justify-center text-muted hover:text-text"
                   onClick={() => removeSubtask(task.id, s.id)}
+                  aria-label="Remove item"
                 >
-                  âœ•
+                  <X className="w-3.5 h-3.5" />
                 </button>
               </div>
             ))
@@ -98,7 +100,7 @@ export const TileContent: React.FC<{ task: Task; disableTick?: boolean }> = ({ t
             <input
               className={`tile-field ${compact ? '!py-1.5 !text-[0.78rem]' : ''}`}
               type="text"
-              placeholder="Add itemâ€¦"
+              placeholder="Add item..."
               ref={subtaskInputRef}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && subtaskInputRef.current?.value.trim()) {
@@ -113,7 +115,7 @@ export const TileContent: React.FC<{ task: Task; disableTick?: boolean }> = ({ t
     );
   };
 
-  // â”€â”€ Slim Wide (wâ‰¥2, h=1): horizontal checklist strip â”€â”€â”€â”€â”€â”€â”€â”€
+  // --- Slim Wide (w >= 2, h = 1): horizontal checklist strip --------
   if (isSlimWide) {
     return (
       <div className="flex flex-col h-full min-h-0 gap-1">
@@ -134,11 +136,11 @@ export const TileContent: React.FC<{ task: Task; disableTick?: boolean }> = ({ t
           ) : (
             <button
               type="button"
-              className="tile-action !w-6 !h-6 shrink-0"
+              className="tile-action !w-6 !h-6 shrink-0 flex items-center justify-center text-muted hover:text-text"
               onClick={() => setListAdding(false)}
               title="Cancel"
             >
-              âœ•
+              <X className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
@@ -170,16 +172,17 @@ export const TileContent: React.FC<{ task: Task; disableTick?: boolean }> = ({ t
                   <span className={`flex-1 min-w-0 truncate ${s.done ? 'text-faint line-through' : ''}`}>{s.text}</span>
                   <button
                     type="button"
-                    className="tile-action !w-5 !h-5 opacity-0 group-hover:opacity-100"
+                    className="tile-action !w-5 !h-5 opacity-0 group-hover:opacity-100 flex items-center justify-center text-muted hover:text-text"
                     onClick={() => removeSubtask(task.id, s.id)}
+                    aria-label="Remove item"
                   >
-                    âœ•
+                    <X className="w-3 h-3" />
                   </button>
                 </div>
               ))
             ) : (
               <div className="text-muted text-[0.75rem] py-3 px-1 m-auto text-center">
-                No items â€” tap <span className="text-text font-medium">+ Add</span>
+                No items - tap <span className="text-text font-medium">+ Add</span>
               </div>
             )}
           </div>
@@ -190,7 +193,7 @@ export const TileContent: React.FC<{ task: Task; disableTick?: boolean }> = ({ t
                 ref={listAddInputRef}
                 className="tile-field !py-1 !px-2 !text-[0.75rem] !rounded-md !h-7"
                 type="text"
-                placeholder="Type item, Enterâ€¦"
+                placeholder="Type item, Enter..."
                 onKeyDown={(e) => {
                   e.stopPropagation();
                   if (e.key === 'Enter') commitListItem();
@@ -207,7 +210,7 @@ export const TileContent: React.FC<{ task: Task; disableTick?: boolean }> = ({ t
     );
   }
 
-  // â”€â”€ Slim Tall (w=1, hâ‰¥2): vertical checklist column â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // --- Slim Tall (w = 1, h >= 2): vertical checklist column ---------
   if (isSlimTall) {
     return (
       <div className="flex flex-col h-full min-h-0 gap-1.5">
@@ -254,7 +257,7 @@ export const TileContent: React.FC<{ task: Task; disableTick?: boolean }> = ({ t
             <input
               className="tile-field !py-1 !px-1.5 !text-[0.65rem] !rounded-md"
               type="text"
-              placeholder="+ Addâ€¦"
+              placeholder="+ Add..."
               ref={subtaskInputRef}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && subtaskInputRef.current?.value.trim()) {
@@ -269,7 +272,7 @@ export const TileContent: React.FC<{ task: Task; disableTick?: boolean }> = ({ t
     );
   }
 
-  // â”€â”€ Large (wâ‰¥3, hâ‰¥2): side-by-side split pane â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // --- Large (w >= 3, h >= 2): side-by-side split pane ---------------
   if (isLarge) {
     return (
       <div className="flex flex-col h-full min-h-0 gap-2.5 relative">
@@ -278,7 +281,7 @@ export const TileContent: React.FC<{ task: Task; disableTick?: boolean }> = ({ t
             <span className="text-[0.7rem] font-semibold tracking-[0.04em] uppercase text-muted shrink-0">Scratchpad</span>
             <textarea
               className="tile-field flex-1 resize-none font-mono text-[0.8125rem] leading-relaxed text-[#C8E8DC] min-h-0"
-              placeholder="Notes, errors, decisionsâ€¦"
+              placeholder="Notes, errors, decisions..."
               value={task.notes || ''}
               onChange={(e) => updateNotes(task.id, e.target.value)}
               data-lenis-prevent="true"
@@ -303,7 +306,7 @@ export const TileContent: React.FC<{ task: Task; disableTick?: boolean }> = ({ t
     );
   }
 
-  // â”€â”€ Standard (wâ‰¥2, hâ‰¥2): tabbed interface â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // --- Standard (w >= 2, h >= 2): tabbed interface ------------------
   const tabs = [
     { id: 'notes', label: 'Notes' },
     { id: 'subtasks', label: 'Tasks' },
@@ -329,7 +332,7 @@ export const TileContent: React.FC<{ task: Task; disableTick?: boolean }> = ({ t
         {task.tab === 'notes' && (
           <textarea
             className="tile-field flex-1 resize-none font-mono text-[0.8125rem] leading-relaxed text-[#C8E8DC] min-h-0"
-            placeholder="Scratch notes, error logs, ideasâ€¦"
+            placeholder="Scratch notes, error logs, ideas..."
             value={task.notes || ''}
             onChange={(e) => updateNotes(task.id, e.target.value)}
             data-lenis-prevent="true"

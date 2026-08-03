@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Settings, RotateCcw, X } from 'lucide-react';
 import { useStore, type Task } from '../store';
 
 function fmtTime(s: number) {
@@ -64,7 +65,7 @@ export const TimerControls: React.FC<TimerControlsProps> = ({ task, compact = fa
             <span className="text-[0.7rem] text-muted font-medium shrink-0 hidden sm:inline">
               {isRunning ? 'Running' : isPausedMid ? 'Paused' : isDone ? 'Finished' : `${Math.round(timer.total / 60)}m`}
             </span>
-            <span className="text-[0.65rem] text-faint group-hover/timer:text-muted transition-colors font-mono">⚙</span>
+            <Settings className="w-3 h-3 text-faint group-hover/timer:text-muted transition-colors shrink-0" />
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             <button
@@ -79,11 +80,11 @@ export const TimerControls: React.FC<TimerControlsProps> = ({ task, compact = fa
             {!isFresh && (
               <button
                 type="button"
-                className="tile-chip !px-2 !py-1 !text-[0.7rem]"
+                className="tile-chip !px-2 !py-1 !text-[0.7rem] flex items-center justify-center"
                 onClick={() => resetTimer(task.id)}
                 title="Restart"
               >
-                ⟳
+                <RotateCcw className="w-3 h-3" />
               </button>
             )}
           </div>
@@ -99,11 +100,11 @@ export const TimerControls: React.FC<TimerControlsProps> = ({ task, compact = fa
               </div>
               <button
                 type="button"
-                className="tile-action !w-6 !h-6 !text-[0.8rem]"
+                className="tile-action !w-6 !h-6 !text-[0.8rem] flex items-center justify-center"
                 onClick={() => setIsExpanded(false)}
                 title="Close timer settings"
               >
-                ✕
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
 
