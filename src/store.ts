@@ -63,6 +63,17 @@ export interface Toast {
 
 export type GridLayout = '6x4' | '8x4' | '6x5';
 
+export interface PersistedWorkspace {
+  mode: TopologyMode;
+  focusedTaskId: string | null;
+  tasks: Task[];
+  activityLogs: ActivityLog[];
+  focusSessions: FocusSession[];
+  gridLayout: GridLayout;
+  morningIntentDate: string | null;
+  notificationPermission: NotificationPermission;
+}
+
 interface AppState {
   mode: TopologyMode;
   focusedTaskId: string | null;
@@ -119,6 +130,7 @@ interface AppState {
   setIsHoveringTask: (val: boolean) => void;
   reorderTasks: (sourceId: string, targetId: string) => void;
   resetWorkspace: () => void;
+  hydrateCloudWorkspace: (workspace: PersistedWorkspace) => void;
 }
 
 const STORAGE_KEY = 'workstash-v1';
@@ -205,6 +217,66 @@ function createSeedTasks(): Task[] {
     { id: uid(), title: 'Book flight for offsite', cat: 'admin', w: 1, h: 1, naturalW: 1, naturalH: 1, type: 'admin', completed: false },
     { id: uid(), title: 'Holding Pen', cat: 'pen', w: 2, h: 1, naturalW: 2, naturalH: 1, type: 'pen', isPen: true, items: ['Slack: check w/ Dana re: staging creds'], completed: false },
   ];
+}
+
+export function buildEmptyWorkspace(): PersistedWorkspace {
+  const pen: Task = {
+    id: uid(),
+    title: 'Holding Pen',
+    cat: 'pen',
+    w: 2,
+    h: 1,
+    naturalW: 2,
+    naturalH: 1,
+    type: 'pen',
+    isPen: true,
+    items: [],
+    completed: false,
+  };
+  return {
+    mode: 'normal',
+    focusedTaskId: null,
+    tasks: [pen],
+    activityLogs: [
+      {
+        id: uid(),
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        msg: 'Workspace created',
+        type: 'system',
+      },
+    ],
+    focusSessions: [],
+    gridLayout: '6x4',
+    morningIntentDate: null,
+    notificationPermission:
+      (typeof Notification !== 'undefined' ? Notification.permission : 'denied') as NotificationPermission,
+  };
+}
+
+export function serializeWorkspaceState(state: {
+  mode: TopologyMode;
+  focusedTaskId: string | null;
+  tasks: Task[];
+  activityLogs: ActivityLog[];
+  focusSessions: FocusSession[];
+  gridLayout: GridLayout;
+  morningIntentDate: string | null;
+  notificationPermission: NotificationPermission;
+}): PersistedWorkspace {
+  return {
+    mode: state.mode,
+    focusedTaskId: state.focusedTaskId,
+    tasks: state.tasks.map(t =>
+      t.timer?.running
+        ? { ...t, timer: { ...t.timer, running: false } }
+        : t
+    ),
+    activityLogs: state.activityLogs.slice(0, 100),
+    focusSessions: state.focusSessions.slice(0, 500),
+    gridLayout: state.gridLayout,
+    morningIntentDate: state.morningIntentDate,
+    notificationPermission: state.notificationPermission,
+  };
 }
 
 function buildInitialState() {
@@ -647,20 +719,37 @@ export const useStore = create<AppState>()(
         });
         get().addToast('Workspace reset to defaults', '⟳');
       },
+
+      hydrateCloudWorkspace: (workspace) => {
+        const tasks = (workspace.tasks || []).map(t =>
+          t.timer?.running ? { ...t, timer: { ...t.timer, running: false } } : t
+        );
+        set({
+          mode: workspace.mode || 'normal',
+          focusedTaskId: workspace.focusedTaskId ?? null,
+          tasks,
+          activityLogs: Array.isArray(workspace.activityLogs) ? workspace.activityLogs : [],
+          focusSessions: Array.isArray(workspace.focusSessions) ? workspace.focusSessions : [],
+          gridLayout: workspace.gridLayout || '6x4',
+          morningIntentDate: workspace.morningIntentDate ?? null,
+          notificationPermission: workspace.notificationPermission || 'default',
+          toasts: [],
+          shutterOpen: null,
+          undoStack: [],
+          redoStack: [],
+          isHoveringTask: false,
+        });
+      },
     }),
     {
       name: STORAGE_KEY,
       version: 1,
-      partialize: (state) => ({
+      partialize: (state) => serializeWorkspaceState({
         mode: state.mode,
         focusedTaskId: state.focusedTaskId,
-        tasks: state.tasks.map(t =>
-          t.timer?.running
-            ? { ...t, timer: { ...t.timer, running: false } }
-            : t
-        ),
-        activityLogs: state.activityLogs.slice(0, 100),
-        focusSessions: state.focusSessions.slice(0, 500),
+        tasks: state.tasks,
+        activityLogs: state.activityLogs,
+        focusSessions: state.focusSessions,
         gridLayout: state.gridLayout,
         morningIntentDate: state.morningIntentDate,
         notificationPermission: state.notificationPermission,

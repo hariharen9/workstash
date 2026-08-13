@@ -1,9 +1,11 @@
 import React from 'react';
 import { useStore, type TopologyMode, occupiedCells } from '../store';
+import { useAuth } from '../auth';
 import { GlowCard } from './GlowCard';
 
 export const Header: React.FC<{ onNewTask: () => void; onDefrag: () => void; onOpenSettings: () => void; onOpenHelp: () => void; onOpenArchive: () => void }> = ({ onNewTask, onDefrag, onOpenSettings, onOpenHelp, onOpenArchive }) => {
   const { mode, changeTopology, tasks, addToast, gridLayout } = useStore();
+  const { user, signOut } = useAuth();
 
   const TOTAL_CELLS = gridLayout === '8x4' ? 32 : gridLayout === '6x5' ? 30 : 24;
 
@@ -163,6 +165,27 @@ export const Header: React.FC<{ onNewTask: () => void; onDefrag: () => void; onO
             <path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" />
           </svg>
         </button>
+
+        {user && (
+          <div className="flex items-center gap-2 pl-2.5 ml-1 border-l border-line shrink-0">
+            <div className="w-7 h-7 rounded-full bg-violet/15 border border-violet/30 grid place-items-center text-violet text-[0.7rem] font-mono font-semibold uppercase shrink-0" title={user.displayName || user.email || undefined}>
+              {(user.displayName?.[0] || user.email?.[0] || '?').toUpperCase()}
+            </div>
+            <button
+              type="button"
+              className="tile-action !w-7 !h-7 hover:!text-danger"
+              title="Sign out"
+              onClick={() => signOut()}
+              aria-label="Sign out"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <path d="M16 17l5-5-5-5" />
+                <path d="M21 12H9" />
+              </svg>
+            </button>
+          </div>
+        )}
       </div>
     </GlowCard>
   );

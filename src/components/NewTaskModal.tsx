@@ -2,11 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { useStore, type TaskCategory, occupiedCells } from '../store';
 import { GlowCard } from './GlowCard';
 
-const cats: { id: TaskCategory; label: string; desc: string; color: string }[] = [
-  { id: 'focus', label: 'Deep Focus', desc: 'Complex work requiring concentration', color: 'violet' },
-  { id: 'fire', label: 'Urgent', desc: 'High priority, needs immediate attention', color: 'amber' },
-  { id: 'admin', label: 'Quick Admin', desc: 'Small tasks, emails, approvals', color: 'teal' },
+const cats: { id: TaskCategory; label: string; desc: string; color: string; size: string }[] = [
+  { id: 'focus', label: 'Deep Focus', desc: 'Complex work requiring concentration', color: 'violet', size: '3×2' },
+  { id: 'fire', label: 'Urgent', desc: 'High priority, needs immediate attention', color: 'amber', size: '2×2' },
+  { id: 'admin', label: 'Quick Admin', desc: 'Small tasks, emails, approvals', color: 'teal', size: '1×1' },
 ];
+
+const fallbackSizes: Record<'focus' | 'fire' | 'admin', { w: number; h: number }[]> = {
+  focus: [{ w: 3, h: 2 }, { w: 2, h: 2 }, { w: 2, h: 1 }, { w: 1, h: 1 }],
+  fire: [{ w: 2, h: 2 }, { w: 2, h: 1 }, { w: 1, h: 1 }],
+  admin: [{ w: 1, h: 1 }],
+};
 
 export const NewTaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const { addTile, tasks, addToast, gridLayout } = useStore();
@@ -30,18 +36,21 @@ export const NewTaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
     }
 
     const used = occupiedCells(tasks);
+    const sizes = fallbackSizes[cat as 'focus' | 'fire' | 'admin'];
+    const preferred = sizes[0];
 
-    if (used + 2 <= TOTAL_CELLS) {
-      addTile(title.trim(), cat, 2, 1);
-    } else if (used + 1 <= TOTAL_CELLS) {
-      addTile(title.trim(), cat, 1, 1);
-      addToast('Grid tight — created as 1×1. Drag the corner to resize.', '⚡');
-    } else {
-      addToast('Grid is full — archive or resize a block first', '⚠');
-      return;
+    for (const size of sizes) {
+      if (used + size.w * size.h <= TOTAL_CELLS) {
+        addTile(title.trim(), cat, size.w, size.h);
+        if (size !== preferred) {
+          addToast(`Grid tight — created as ${size.w}×${size.h}. Drag the corner to resize.`, '⚡');
+        }
+        onClose();
+        return;
+      }
     }
 
-    onClose();
+    addToast('Grid is full — archive or resize a block first', '⚠');
   };
 
   return (
@@ -102,8 +111,9 @@ export const NewTaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
                     c.color === 'amber' ? 'bg-amber' : 'bg-teal'
                   }`} />
                   <span className="text-[0.8125rem] font-semibold">{c.label}</span>
+                  <span className="ml-auto font-mono text-[0.65rem] text-faint">{c.size}</span>
                 </div>
-                <p className="text-[0.72rem] opacity-55 mt-0.5 m-0 ml-3.5 leading-snug">{c.desc}</p>
+                <p className="text-[0.72rem] opacity-55 mt-0.5 m-0 leading-snug">{c.desc}</p>
               </button>
             ))}
           </div>

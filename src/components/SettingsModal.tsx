@@ -59,7 +59,7 @@ export const SettingsModal: React.FC<{ isOpen: boolean; onClose: () => void }> =
 
         <div className="flex flex-col gap-2 border-t border-line pt-4">
           <label className="text-sm font-mono tracking-widest text-muted uppercase">Data</label>
-          <p className="text-xs text-muted">Your workspace is saved automatically in this browser. Reset restores the starter tasks and clears analytics.</p>
+          <p className="text-xs text-muted">Your workspace syncs automatically to your signed-in account. Reset restores the starter tasks and clears analytics.</p>
           <button
             type="button"
             onClick={handleReset}
