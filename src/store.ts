@@ -117,6 +117,7 @@ interface AppState {
   addSubtask: (id: string, text: string) => void;
   setTimerRunning: (id: string, running: boolean) => void;
   tickTimer: (id: string) => void;
+  recordStandaloneSession: (durationSeconds: number) => void;
   resetTimer: (id: string) => void;
   adjustTimer: (id: string, deltaSeconds: number) => void;
   setTimerDuration: (id: string, totalSeconds: number) => void;
@@ -653,6 +654,22 @@ export const useStore = create<AppState>()(
         }
 
         return { tasks: newTasks };
+      }),
+
+      recordStandaloneSession: (durationSeconds) => set((state) => {
+        const session: FocusSession = {
+          id: uid(),
+          date: todayKey(),
+          taskId: 'standalone',
+          taskTitle: 'Standalone focus session',
+          cat: 'focus',
+          durationSeconds,
+        };
+        setTimeout(() => {
+          get().addToast('Focus session recorded', '⏰');
+          get().logActivity('Completed a standalone focus session', 'focus');
+        }, 0);
+        return { focusSessions: [session, ...state.focusSessions] };
       }),
 
       resetTimer: (id) => set((state) => ({

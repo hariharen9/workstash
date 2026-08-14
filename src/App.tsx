@@ -13,6 +13,7 @@ import { ActiveTimerWidget } from './components/ActiveTimerWidget';
 import { CommandPalette } from './components/CommandPalette';
 import { MorningIntent } from './components/MorningIntent';
 import { useStore } from './store';
+import { useAuth } from './auth';
 
 function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -20,7 +21,8 @@ function App() {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
   const [isDefragging, setIsDefragging] = useState(false);
-  const { runDefrag, undo, redo, undoStack, redoStack } = useStore();
+  const { undo, redo, undoStack, redoStack } = useStore();
+  const { syncStatus, syncError, retrySync } = useAuth();
 
   useEffect(() => {
     const lenis = new Lenis({
@@ -87,11 +89,26 @@ function App() {
 
   const handleDefragComplete = () => {
     setIsDefragging(false);
-    runDefrag();
   };
 
   return (
     <>
+      {syncStatus === 'error' && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[80] flex items-center gap-3 bg-danger/10 border border-danger/40 backdrop-blur-sm px-4 py-3 rounded-xl shadow-toast max-w-md w-[calc(100%-2rem)]">
+          <span className="text-danger text-lg leading-none">⚠</span>
+          <div className="flex-1 min-w-0">
+            <div className="text-text text-[0.8rem] font-semibold">Sync problem</div>
+            <div className="text-muted text-[0.72rem] leading-snug">{syncError}</div>
+          </div>
+          <button
+            type="button"
+            onClick={() => void retrySync()}
+            className="shrink-0 text-[0.75rem] font-semibold text-text bg-danger/20 hover:bg-danger/30 border border-danger/40 px-3 py-1.5 rounded-lg transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      )}
       <section className="h-screen w-full flex flex-col shrink-0 relative z-10 bg-void">
         <Header
           onNewTask={() => setIsModalOpen(true)}

@@ -92,7 +92,7 @@ function EmberRing({ size, stroke, progress, meta, running, flash, mini, childre
 }
 
 export const ActiveTimerWidget: React.FC = () => {
-  const { tasks, setTimerRunning, resetTimer, openShutter } = useStore();
+  const { tasks, setTimerRunning, resetTimer, openShutter, recordStandaloneSession } = useStore();
 
   // ── Pin logic ──────────────────────────────────────────────
   // We pin to a task when its timer starts. We KEEP the pin when
@@ -206,6 +206,7 @@ export const ActiveTimerWidget: React.FC = () => {
     const nc = mode === 'focus' ? sessionCount + 1 : sessionCount;
     if (mode === 'focus') {
       setSessionCount(nc);
+      recordStandaloneSession(durations.focus * 60);
       const nextMode: ModeKey = nc % CYCLE === 0 ? 'long' : 'short';
       setMode(nextMode);
       setStandaloneSeconds(durations[nextMode] * 60);
