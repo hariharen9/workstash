@@ -11,8 +11,13 @@ export const SettingsModal: React.FC<{ isOpen: boolean; onClose: () => void }> =
     if (isOpen) {
       setLocalLayout(gridLayout);
       setConfirmReset(false);
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') onClose();
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
     }
-  }, [isOpen, gridLayout]);
+  }, [isOpen, gridLayout, onClose]);
 
   if (!isOpen) return null;
 

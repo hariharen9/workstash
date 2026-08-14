@@ -1,4 +1,5 @@
 import React from 'react';
+import { Settings } from 'lucide-react';
 import { useStore, type TopologyMode, occupiedCells } from '../store';
 import { useAuth } from '../auth';
 import { GlowCard } from './GlowCard';
@@ -12,6 +13,8 @@ export const Header: React.FC<{ onNewTask: () => void; onDefrag: () => void; onO
   const used = occupiedCells(tasks);
   const capacityPct = Math.min(100, (used / TOTAL_CELLS) * 100);
   const capColor = capacityPct > 90 ? '#F0645A' : capacityPct > 70 ? '#F6B03A' : '#4FE3CE';
+
+  const completedOnGridCount = tasks.filter(t => !t.archived && t.completed).length;
 
   const handleTopoClick = (m: TopologyMode) => {
     changeTopology(m);
@@ -133,10 +136,20 @@ export const Header: React.FC<{ onNewTask: () => void; onDefrag: () => void; onO
         </button>
         <button
           type="button"
-          className="cursor-pointer font-semibold text-[0.8125rem] py-2 px-3.5 rounded-[10px] transition-all duration-200 flex items-center gap-1.5 bg-elevated text-muted border border-line hover:text-text hover:border-faint"
+          className={`cursor-pointer font-semibold text-[0.8125rem] py-2 px-3.5 rounded-[10px] transition-all duration-200 flex items-center gap-1.5 border ${
+            completedOnGridCount > 0
+              ? 'bg-teal-dim/40 text-teal border-teal/40 hover:bg-teal/20 shadow-[0_0_12px_-2px_rgba(79,227,206,0.3)]'
+              : 'bg-elevated text-muted border-line hover:text-text hover:border-faint'
+          }`}
           onClick={onDefrag}
+          title={completedOnGridCount > 0 ? `${completedOnGridCount} completed block${completedOnGridCount > 1 ? 's' : ''} ready for Defrag` : 'Defragment workspace'}
         >
-          Defrag
+          <span>Defrag</span>
+          {completedOnGridCount > 0 && (
+            <span className="bg-teal text-void font-mono font-bold text-[0.65rem] px-1.5 py-0.2 rounded-full leading-none shrink-0">
+              {completedOnGridCount}
+            </span>
+          )}
         </button>
         <button
           type="button"
@@ -159,11 +172,9 @@ export const Header: React.FC<{ onNewTask: () => void; onDefrag: () => void; onO
           className="tile-action !w-9 !h-9"
           title="Settings"
           onClick={onOpenSettings}
+          aria-label="Settings"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden>
-            <circle cx="12" cy="12" r="3" />
-            <path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" />
-          </svg>
+          <Settings size={16} />
         </button>
 
         {user && (

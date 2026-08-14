@@ -25,10 +25,17 @@ const Root = () => {
   return <App />;
 };
 
-createRoot(document.getElementById('root')!).render(
+const container = document.getElementById('root')!;
+const rootKey = '__react_root__';
+// @ts-expect-error window HMR root extension
+const root = window[rootKey] || createRoot(container);
+// @ts-expect-error window HMR root extension
+window[rootKey] = root;
+
+root.render(
   <StrictMode>
     <AuthProvider>
       <Root />
     </AuthProvider>
   </StrictMode>,
-)
+);

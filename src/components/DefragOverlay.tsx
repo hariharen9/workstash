@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useStore, type Task } from '../store';
-import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { GlowCard } from './GlowCard';
 
 export const DefragOverlay: React.FC<{
@@ -11,7 +10,7 @@ export const DefragOverlay: React.FC<{
   const [subText, setSubText] = useState('');
   const [localTasks, setLocalTasks] = useState<Task[]>([]);
   const [highlightCompleted, setHighlightCompleted] = useState(false);
-  const [parent] = useAutoAnimate<HTMLDivElement>({ duration: 400, easing: 'ease-out' });
+  const [isClearing, setIsClearing] = useState(false);
 
   // Use refs to hold stable references to these values so they don't re-trigger the animation sequence
   const tasksRef = useRef(tasks);
@@ -26,10 +25,11 @@ export const DefragOverlay: React.FC<{
 
   useEffect(() => {
     if (isDefragging) {
-      // Snapshot the current tasks
-      const currentTasks = tasksRef.current;
-      setLocalTasks([...currentTasks].filter(t => !t.isPen));
+      // Snapshot the current tasks on grid (not archived)
+      const currentTasks = tasksRef.current.filter(t => !t.archived && !t.isPen);
+      setLocalTasks([...currentTasks]);
       setHighlightCompleted(false);
+      setIsClearing(false);
       
       const completedCount = currentTasks.filter(t => t.completed).length;
       setSubText('analyzing sectors...');
@@ -41,19 +41,18 @@ export const DefragOverlay: React.FC<{
       
       const t2 = setTimeout(() => {
         setSubText('clearing blocks and compacting grid...');
-        // Remove completed, auto-animate will handle the visual sliding
-        setLocalTasks(prev => prev.filter(t => !t.completed));
+        setIsClearing(true);
       }, 1800);
       
       const t3 = setTimeout(() => {
         runDefragRef.current();
         setSubText('defragmentation complete');
-      }, 2800);
+      }, 2600);
 
       const t4 = setTimeout(() => {
         useStore.getState().addToast(`Defrag complete — ${completedCount} archived`, '⟳');
         onCompleteRef.current();
-      }, 3400);
+      }, 3200);
 
       return () => {
         clearTimeout(t1);
@@ -75,11 +74,11 @@ export const DefragOverlay: React.FC<{
       <GlowCard 
         customSize 
         glowColor="blue"
-        ref={parent} 
         className="grid grid-cols-6 grid-rows-4 grid-flow-dense gap-2 p-3 bg-surface rounded-xl w-[400px] h-[280px]"
       >
         {localTasks.map(t => {
-          const isRemoving = highlightCompleted && t.completed;
+          const isCompleted = t.completed;
+          const isRemoving = isClearing && isCompleted;
           const bgClass = t.isPen ? 'bg-elevated border-dashed' : 
                           t.cat === 'focus' ? 'bg-violet border-transparent' : 
                           t.cat === 'fire' ? 'bg-amber border-transparent' : 
@@ -88,7 +87,15 @@ export const DefragOverlay: React.FC<{
           return (
             <div 
               key={t.id}
-              className={`rounded-[6px] border opacity-80 shadow-sm transition-all duration-300 ${bgClass} ${isRemoving ? 'opacity-30 scale-90 saturate-200 ring-2 ring-white/50' : ''} ${t.parked ? 'opacity-20' : ''}`}
+              className={`rounded-[6px] border shadow-sm transition-all duration-500 ease-out ${bgClass} ${
+                isRemoving
+                  ? 'opacity-0 scale-50 filter blur-sm -translate-y-2'
+                  : isCompleted && highlightCompleted
+                  ? 'opacity-100 scale-105 ring-2 ring-teal shadow-[0_0_16px_rgba(79,227,206,0.6)]'
+                  : t.parked
+                  ? 'opacity-20'
+                  : 'opacity-80'
+              }`}
               style={{ gridColumn: `span ${t.w}`, gridRow: `span ${t.h}` }}
             />
           );

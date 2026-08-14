@@ -1,13 +1,24 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useStore, occupiedCells } from '../store';
 import { GlowCard } from './GlowCard';
 
 export const ArchiveModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const { tasks, restoreTask, gridLayout } = useStore();
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
-  const archivedTasks = tasks.filter(t => t.completed && !t.isPen);
+  const archivedTasks = tasks.filter(t => t.archived && !t.isPen);
 
   const TOTAL_CELLS = gridLayout === '8x4' ? 32 : gridLayout === '6x5' ? 30 : 24;
   const used = occupiedCells(tasks);
@@ -20,11 +31,13 @@ export const ArchiveModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-void/80 backdrop-blur-sm animate-tileIn"
+      data-lenis-prevent="true"
       onClick={onClose}
     >
       <GlowCard
         customSize
         glowColor="blue"
+        data-lenis-prevent="true"
         className="w-full max-w-[620px] max-h-[80vh] bg-surface rounded-2xl flex flex-col shadow-2xl relative overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
@@ -49,7 +62,11 @@ export const ArchiveModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2.5" data-lenis-prevent="true">
+        <div
+          className="flex-1 overflow-y-auto p-4 flex flex-col gap-2.5 min-h-0"
+          data-lenis-prevent="true"
+          onWheel={(e) => e.stopPropagation()}
+        >
           {archivedTasks.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
               <span className="text-[2rem]">📭</span>

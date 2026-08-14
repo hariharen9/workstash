@@ -49,6 +49,7 @@ export interface Task {
   timer?: { total: number; remaining: number; running: boolean };
   energy?: number;
   completed: boolean;
+  archived?: boolean;
   tab?: string;
   parked?: boolean;
   isPen?: boolean;
@@ -103,6 +104,7 @@ interface AppState {
   updateTitle: (id: string, title: string) => void;
   updateCategory: (id: string, cat: TaskCategory) => void;
   archiveTask: (id: string) => void;
+  toggleCompleteTask: (id: string) => void;
   restoreTask: (id: string) => void;
   changeTopology: (mode: TopologyMode) => void;
   openShutter: (id: string) => void;
@@ -440,8 +442,56 @@ export const useStore = create<AppState>()(
           get().logActivity(`Archived "${task.title}"`, task.cat === 'focus' ? 'focus' : task.cat === 'fire' ? 'fire' : 'admin');
         }
         set((state) => ({
-          tasks: state.tasks.map(t => t.id === id ? { ...t, completed: true, timer: t.timer ? { ...t.timer, running: false } : t.timer } : t)
+          tasks: state.tasks.map(t => t.id === id ? { ...t, completed: true, archived: true, timer: t.timer ? { ...t.timer, running: false } : t.timer } : t)
         }));
+      },
+
+      toggleCompleteTask: (id) => {
+        const task = get().tasks.find(t => t.id === id);
+        if (!task) return;
+        get().pushSnapshot();
+        const nextCompleted = !task.completed;
+        const TOTAL_CELLS = get().gridLayout === '8x4' ? 32 : get().gridLayout === '6x5' ? 30 : 24;
+
+        if (nextCompleted) {
+          get().logActivity(`Completed "${task.title}"`, task.cat === 'focus' ? 'focus' : task.cat === 'fire' ? 'fire' : 'admin');
+          set((state) => ({
+            tasks: state.tasks.map(t => t.id === id ? {
+              ...t,
+              completed: true,
+              w: 1,
+              h: 1,
+              timer: t.timer ? { ...t.timer, running: false } : t.timer
+            } : t)
+          }));
+        } else {
+          // Reopening / Undone -> attempt to restore natural dimensions
+          const currentOccupied = occupiedCells(get().tasks);
+          const usedWithoutThis = Math.max(0, currentOccupied - 1);
+          const naturalCells = task.naturalW * task.naturalH;
+
+          let targetW = task.naturalW;
+          let targetH = task.naturalH;
+
+          if (usedWithoutThis + naturalCells > TOTAL_CELLS) {
+            targetW = 1;
+            targetH = 1;
+            get().addToast(`Reopened "${task.title}" as 1×1 — grid space is tight`, '↩');
+          } else {
+            get().addToast(`Reopened "${task.title}" — restored to ${targetW}×${targetH}`, '↩');
+          }
+
+          get().logActivity(`Reopened "${task.title}"`, 'system');
+
+          set((state) => ({
+            tasks: state.tasks.map(t => t.id === id ? {
+              ...t,
+              completed: false,
+              w: targetW,
+              h: targetH,
+            } : t)
+          }));
+        }
       },
 
       restoreTask: (id) => {
@@ -458,7 +508,7 @@ export const useStore = create<AppState>()(
 
         if (used + taskCells > TOTAL_CELLS) {
           if (used + 1 > TOTAL_CELLS) {
-            get().addToast('Grid full — archive or resize a block first', '⚠');
+            get().addToast('Grid full — defrag or resize a block first', '⚠');
             return;
           }
           restoredW = 1;
@@ -474,6 +524,7 @@ export const useStore = create<AppState>()(
           tasks: state.tasks.map(t => t.id === id ? {
             ...t,
             completed: false,
+            archived: false,
             w: restoredW,
             h: restoredH,
             naturalW: restoredW,
@@ -689,11 +740,28 @@ export const useStore = create<AppState>()(
 
       runDefrag: () => set((state) => {
         get().pushSnapshot();
-        const completedCount = state.tasks.filter(t => t.completed).length;
-        const unfinished = state.tasks.filter(t => !t.completed);
-        const result = applyTopology(unfinished, 'normal', null, state.gridLayout);
-        setTimeout(() => get().logActivity(`Defrag cleared ${completedCount} block${completedCount === 1 ? '' : 's'}`, 'system'), 0);
-        return { tasks: result.tasks, mode: 'normal', focusedTaskId: null };
+        const completedTasks = state.tasks.filter(t => !t.archived && t.completed);
+        const completedCount = completedTasks.length;
+        
+        // Mark all completed active tasks as archived
+        const nextTasks = state.tasks.map(t => {
+          if (!t.archived && t.completed) {
+            return { ...t, archived: true, timer: t.timer ? { ...t.timer, running: false } : t.timer };
+          }
+          return t;
+        });
+        
+        const activeUnarchived = nextTasks.filter(t => !t.archived);
+        const result = applyTopology(activeUnarchived, 'normal', null, state.gridLayout);
+        
+        const finalTasks = nextTasks.map(t => {
+          if (t.archived) return t;
+          const found = result.tasks.find(r => r.id === t.id);
+          return found || t;
+        });
+
+        setTimeout(() => get().logActivity(`Defrag archived ${completedCount} completed block${completedCount === 1 ? '' : 's'}`, 'system'), 0);
+        return { tasks: finalTasks, mode: 'normal', focusedTaskId: null };
       }),
 
       reorderTasks: (sourceId, targetId) => set((state) => {
@@ -721,9 +789,11 @@ export const useStore = create<AppState>()(
       },
 
       hydrateCloudWorkspace: (workspace) => {
-        const tasks = (workspace.tasks || []).map(t =>
-          t.timer?.running ? { ...t, timer: { ...t.timer, running: false } } : t
-        );
+        const tasks = (workspace.tasks || []).map(t => ({
+          ...t,
+          archived: t.archived ?? (t.completed ? true : false),
+          timer: t.timer?.running ? { ...t.timer, running: false } : t.timer
+        }));
         set({
           mode: workspace.mode || 'normal',
           focusedTaskId: workspace.focusedTaskId ?? null,
@@ -759,10 +829,12 @@ export const useStore = create<AppState>()(
         if (!p || !Array.isArray(p.tasks) || p.tasks.length === 0) {
           return current;
         }
-        // Always stop running timers after reload
-        const tasks = p.tasks.map(t =>
-          t.timer?.running ? { ...t, timer: { ...t.timer, running: false } } : t
-        );
+        // Always stop running timers after reload; ensure archived flag is set
+        const tasks = p.tasks.map(t => ({
+          ...t,
+          archived: t.archived ?? (t.completed ? true : false),
+          timer: t.timer?.running ? { ...t.timer, running: false } : t.timer
+        }));
         return {
           ...current,
           ...p,
@@ -782,7 +854,7 @@ export const useStore = create<AppState>()(
 
 export function occupiedCells(tasks: Task[]): number {
   return tasks.reduce((sum, t) => {
-    if (t.completed || t.isPen) return sum;
+    if (t.archived || t.isPen) return sum;
     return sum + (t.parked ? 1 : t.w * t.h);
   }, 0);
 }

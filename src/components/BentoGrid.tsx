@@ -22,7 +22,7 @@ export const BentoGrid: React.FC<{ onNewTask: () => void }> = ({ onNewTask }) =>
   const TOTAL_CELLS = gridLayout === '8x4' ? 32 : gridLayout === '6x5' ? 30 : 24;
   const used = occupiedCells(tasks);
   const isFull = used >= TOTAL_CELLS;
-  const gridTasks = tasks.filter(t => !t.completed && !t.isPen);
+  const gridTasks = tasks.filter(t => !t.archived && !t.isPen);
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId]     = useState<string | null>(null);

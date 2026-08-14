@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useStore, type Task, type TaskCategory, occupiedCells } from '../store';
 import { TileContent } from './TileContent';
+import { TileCompleted } from './TileCompleted';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GlowCard } from './GlowCard';
@@ -44,7 +45,7 @@ const ResizeGripIcon = () => (
 );
 
 export const Tile: React.FC<{ task: Task; isBeingDragged?: boolean; isDragTarget?: boolean }> = ({ task, isBeingDragged = false, isDragTarget = false }) => {
-  const { archiveTask, openShutter, setTileSize, tasks, mode, setFocusedTask, addToast, setIsHoveringTask, gridLayout, updateTitle, updateCategory } = useStore();
+  const { archiveTask, toggleCompleteTask, openShutter, setTileSize, tasks, mode, setFocusedTask, addToast, setIsHoveringTask, gridLayout, updateTitle, updateCategory } = useStore();
 
   const TOTAL_CELLS = gridLayout === '8x4' ? 32 : gridLayout === '6x5' ? 30 : 24;
   const maxCols = gridLayout === '8x4' ? 8 : 6;
@@ -132,26 +133,29 @@ export const Tile: React.FC<{ task: Task; isBeingDragged?: boolean; isDragTarget
     setIsEditingTitle(false);
   };
 
-  const finishArchive = () => {
-    archiveTask(task.id);
-    addToast(`Archived "${task.title}"`, '✓');
-  };
-
   const handleArchive = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isCompleting || isChecking) return;
     setIsCompleting(true);
-    setTimeout(finishArchive, 480);
+    setTimeout(() => {
+      archiveTask(task.id);
+      addToast(`Archived — "${task.title}"`, '📦');
+    }, 280);
   };
 
   const handleHeroCheck = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (isChecking || isCompleting) return;
+    if (isChecking) return;
     setIsChecking(true);
     setTimeout(() => {
-      setIsCompleting(true);
-      setTimeout(finishArchive, 280);
-    }, 420);
+      toggleCompleteTask(task.id);
+      setIsChecking(false);
+      if (!task.completed) {
+        addToast(`Done — "${task.title}" (awaiting defrag)`, '✓');
+      } else {
+        addToast(`Reopened "${task.title}"`, '↩');
+      }
+    }, 320);
   };
 
   // Corner drag-resize handlers — use pointer capture for clean cross-element tracking
@@ -284,10 +288,25 @@ export const Tile: React.FC<{ task: Task; isBeingDragged?: boolean; isDragTarget
 
   const actionBar = !task.isPen && (
     <div
-      className={`flex items-center gap-0.5 shrink-0 transition-opacity duration-200 ${
-        isHovered || isEditingTitle ? 'opacity-100' : 'opacity-35'
+      className={`flex items-center gap-1 shrink-0 transition-opacity duration-200 ${
+        isHovered || isEditingTitle || isChecking || task.completed ? 'opacity-100' : 'opacity-40'
       }`}
     >
+      {!isMicro && (
+        <button
+          type="button"
+          className={`hero-check-sm ${task.completed || isChecking ? 'is-checking' : ''}`}
+          title={task.completed ? "Reopen task" : "Mark task as Done (awaiting defrag)"}
+          onClick={handleHeroCheck}
+          aria-label={`Mark ${task.title} as done`}
+        >
+          <span className="hero-check-sm__burst" />
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+          <span>{task.completed ? 'Done ✓' : 'Done'}</span>
+        </button>
+      )}
       <div {...attributes} {...listeners} className="tile-action cursor-grab active:cursor-grabbing" title="Drag to reorder">
         <DragIcon />
       </div>
@@ -297,7 +316,7 @@ export const Tile: React.FC<{ task: Task; isBeingDragged?: boolean; isDragTarget
         </button>
       )}
       {!isMicro && (
-        <button type="button" className="tile-action hover:!text-danger" title="Archive" onClick={handleArchive}>
+        <button type="button" className="tile-action hover:!text-danger" title="Archive / Remove" onClick={handleArchive}>
           <CloseIcon />
         </button>
       )}
@@ -325,7 +344,9 @@ export const Tile: React.FC<{ task: Task; isBeingDragged?: boolean; isDragTarget
       />
     ) : (
       <p
-        className={`${titleClass} cursor-text text-text hover:text-violet transition-colors ${centered ? '' : 'flex-1 min-w-0'}`}
+        className={`${titleClass} cursor-text text-text hover:text-violet transition-colors ${centered ? '' : 'flex-1 min-w-0'} ${
+          task.completed ? 'line-through text-muted/80' : ''
+        }`}
         title="Click to rename"
         onClick={(e) => {
           e.stopPropagation();
@@ -338,12 +359,22 @@ export const Tile: React.FC<{ task: Task; isBeingDragged?: boolean; isDragTarget
   );
 
   const footer = isMicro ? (
-    <div className="flex items-center shrink-0 mt-auto pt-1.5 w-full">
+    <div className="flex items-center gap-1.5 shrink-0 mt-auto pt-1.5 w-full">
       {catBadge}
+      {task.completed && (
+        <span className="font-mono text-[0.58rem] font-semibold text-teal bg-teal/15 px-1.5 py-0.5 rounded ml-auto" title="Awaiting end-of-day Defrag">
+          ✓ Done
+        </span>
+      )}
     </div>
   ) : (
     <div className="flex items-center gap-2 shrink-0 mt-2.5 pt-0.5">
       {catBadge}
+      {task.completed && (
+        <span className="font-mono text-[0.65rem] font-semibold text-teal bg-teal/15 border border-teal/30 px-2 py-0.5 rounded-md" title="This block will be archived on Defrag">
+          Awaiting Defrag
+        </span>
+      )}
       <span
         className={`size-ribbon transition-opacity duration-200 ${isHovered ? 'opacity-100' : 'opacity-0'}`}
         title={`${task.w}×${task.h} grid cells`}
@@ -362,6 +393,8 @@ export const Tile: React.FC<{ task: Task; isBeingDragged?: boolean; isDragTarget
       glowColor={glowColorMap[task.cat as keyof typeof glowColorMap] || 'blue'}
       className={`bg-surface/95 shadow-tile overflow-hidden flex flex-col transition-[background,box-shadow,opacity,filter] duration-300 min-h-0 relative ${catClass} ${
         isMicro ? 'p-3' : isLarge ? 'p-4' : 'p-3.5'
+      } ${
+        task.completed ? 'opacity-[0.78] saturate-[0.8] border-teal/40 bg-teal-dim/10 ring-1 ring-teal/20' : ''
       } ${
         task.parked ? 'opacity-[0.38] saturate-[0.45]' : ''
       } ${isCompleting ? 'animate-completePop' : ''} ${isEntering ? 'animate-tileIn' : ''} ${
@@ -384,16 +417,18 @@ export const Tile: React.FC<{ task: Task; isBeingDragged?: boolean; isDragTarget
       onMouseLeave={() => setIsHovered(false)}
       onDoubleClick={handleDoubleClick}
     >
-      {isMicro ? (
+      {task.completed ? (
+        <TileCompleted task={task} onUndo={handleHeroCheck} onArchive={handleArchive} />
+      ) : isMicro ? (
         <div className="flex flex-col h-full items-center relative min-h-0">
           <div className="absolute top-0 right-0 z-10">{actionBar}</div>
           <div className="flex-1 flex flex-col items-center justify-center gap-2.5 w-full px-1 pt-1 min-h-0">
             <button
               type="button"
               className={`hero-check ${isChecking ? 'is-checking' : ''}`}
-              title="Complete task"
+              title="Mark task as Done"
               onClick={handleHeroCheck}
-              aria-label={`Complete ${task.title}`}
+              aria-label={`Mark ${task.title} as done`}
             >
               <span className="hero-check__burst" />
               <svg className="hero-check__mark" viewBox="0 0 24 24" aria-hidden>

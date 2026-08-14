@@ -3,7 +3,7 @@ import { useStore } from '../store';
 import { TileContent } from './TileContent';
 
 export const FocusShutter: React.FC = () => {
-  const { shutterOpen, closeShutter, tasks, isHoveringTask, updateTitle } = useStore();
+  const { shutterOpen, closeShutter, tasks, isHoveringTask, updateTitle, archiveTask, addToast } = useStore();
 
   const task = tasks.find(t => t.id === shutterOpen);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -97,9 +97,26 @@ export const FocusShutter: React.FC = () => {
                   {task.title}
                 </p>
               )}
-              {task.cat === 'focus' && <span className="font-mono text-[0.6875rem] font-semibold px-2.5 py-1 rounded-md tracking-[0.04em] uppercase bg-violet-dim text-violet shrink-0">Deep Focus</span>}
-              {task.cat === 'fire' && <span className="font-mono text-[0.6875rem] font-semibold px-2.5 py-1 rounded-md tracking-[0.04em] uppercase bg-amber-dim text-amber shrink-0">Urgent</span>}
-              {task.cat === 'admin' && <span className="font-mono text-[0.6875rem] font-semibold px-2.5 py-1 rounded-md tracking-[0.04em] uppercase bg-teal-dim text-teal shrink-0">Quick Admin</span>}
+              <div className="flex items-center gap-2 shrink-0">
+                {task.cat === 'focus' && <span className="font-mono text-[0.6875rem] font-semibold px-2.5 py-1 rounded-md tracking-[0.04em] uppercase bg-violet-dim text-violet">Deep Focus</span>}
+                {task.cat === 'fire' && <span className="font-mono text-[0.6875rem] font-semibold px-2.5 py-1 rounded-md tracking-[0.04em] uppercase bg-amber-dim text-amber">Urgent</span>}
+                {task.cat === 'admin' && <span className="font-mono text-[0.6875rem] font-semibold px-2.5 py-1 rounded-md tracking-[0.04em] uppercase bg-teal-dim text-teal">Quick Admin</span>}
+                <button
+                  type="button"
+                  className="hero-check-sm !h-8 !px-3 !text-[0.75rem] shadow-toast"
+                  title="Mark task as Done and exit Focus Shutter"
+                  onClick={() => {
+                    archiveTask(task.id);
+                    addToast(`Done — "${task.title}"`, '✓');
+                    closeShutter();
+                  }}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  <span>Mark as Done</span>
+                </button>
+              </div>
             </div>
             <div className="flex-1 min-h-0 mt-5 flex flex-col">
               <TileContent task={proxyTask} disableTick />
