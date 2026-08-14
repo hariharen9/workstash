@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { useStore, type Task, type TaskCategory, occupiedCells } from '../store';
+import { useStore, type Task, type TaskCategory, occupiedCells, recurrenceLabel, streakForTask } from '../store';
 import { TileContent } from './TileContent';
 import { TileCompleted } from './TileCompleted';
 import { useSortable } from '@dnd-kit/sortable';
@@ -148,13 +148,18 @@ export const Tile: React.FC<{ task: Task; isBeingDragged?: boolean; isDragTarget
     if (isChecking) return;
     setIsChecking(true);
     setTimeout(() => {
-      toggleCompleteTask(task.id);
-      setIsChecking(false);
-      if (!task.completed) {
-        addToast(`Done — "${task.title}" (awaiting defrag)`, '✓');
+      if (task.recurrence && !task.completed) {
+        // Recurring completion handles its own toast + re-arm.
+        toggleCompleteTask(task.id);
       } else {
-        addToast(`Reopened "${task.title}"`, '↩');
+        toggleCompleteTask(task.id);
+        if (!task.completed) {
+          addToast(`Done — "${task.title}" (awaiting defrag)`, '✓');
+        } else {
+          addToast(`Reopened "${task.title}"`, '↩');
+        }
       }
+      setIsChecking(false);
     }, 320);
   };
 
@@ -361,6 +366,11 @@ export const Tile: React.FC<{ task: Task; isBeingDragged?: boolean; isDragTarget
   const footer = isMicro ? (
     <div className="flex items-center gap-1.5 shrink-0 mt-auto pt-1.5 w-full">
       {catBadge}
+      {task.recurrence && (
+        <span className="font-mono text-[0.58rem] font-semibold text-violet bg-violet-dim px-1.5 py-0.5 rounded" title={recurrenceLabel(task.recurrence)}>
+          ⟳{streakForTask(task) > 0 ? ` ${streakForTask(task)}🔥` : ''}
+        </span>
+      )}
       {task.completed && (
         <span className="font-mono text-[0.58rem] font-semibold text-teal bg-teal/15 px-1.5 py-0.5 rounded ml-auto" title="Awaiting end-of-day Defrag">
           ✓ Done
@@ -370,6 +380,11 @@ export const Tile: React.FC<{ task: Task; isBeingDragged?: boolean; isDragTarget
   ) : (
     <div className="flex items-center gap-2 shrink-0 mt-2.5 pt-0.5">
       {catBadge}
+      {task.recurrence && (
+        <span className="font-mono text-[0.65rem] font-semibold text-violet bg-violet-dim border border-violet/30 px-2 py-0.5 rounded-md" title={recurrenceLabel(task.recurrence)}>
+          ⟳{streakForTask(task) > 0 ? ` ${streakForTask(task)}🔥` : ''}
+        </span>
+      )}
       {task.completed && (
         <span className="font-mono text-[0.65rem] font-semibold text-teal bg-teal/15 border border-teal/30 px-2 py-0.5 rounded-md" title="This block will be archived on Defrag">
           Awaiting Defrag

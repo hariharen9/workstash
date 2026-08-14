@@ -4,6 +4,17 @@ import { persist } from 'zustand/middleware';
 export type TaskCategory = 'focus' | 'fire' | 'admin' | 'pen';
 export type TopologyMode = 'normal' | 'deep' | 'fire' | 'admin';
 
+export type RecurrenceFrequency = 'daily' | 'weekdays' | 'weekly' | 'monthly';
+
+export interface Recurrence {
+  frequency: RecurrenceFrequency;
+  interval: number;      // every N units (1 = every day/week/month)
+  days: number[];        // 0=Sun..6=Sat, used for weekly
+  time: string | null;   // 'HH:MM' 24h local, when the task should surface
+  anchorDate: string;    // 'YYYY-MM-DD' — first occurrence anchor
+  monthDay?: number;     // 1..31, used for monthly
+}
+
 /** Snapshot of undoable state */
 interface Snapshot {
   tasks: Task[];
@@ -54,6 +65,12 @@ export interface Task {
   parked?: boolean;
   isPen?: boolean;
   items?: string[];
+  recurrence?: Recurrence | null;
+  nextDue?: string | null;      // ISO datetime of the next occurrence
+  dueDate?: string | null;      // ISO datetime the current occurrence became due
+  lastCompleted?: string | null; // YYYY-MM-DD
+  completionDates?: string[];    // YYYY-MM-DD history for streak math
+  dormant?: boolean;            // hidden until nextDue arrives
 }
 
 export interface Toast {
@@ -101,11 +118,17 @@ interface AppState {
   logActivity: (msg: string, type: ActivityLog['type']) => void;
 
   addTile: (title: string, cat: TaskCategory, w: number, h: number) => void;
+  addRecurringTile: (title: string, cat: TaskCategory, w: number, h: number, recurrence: Recurrence) => void;
   updateTitle: (id: string, title: string) => void;
   updateCategory: (id: string, cat: TaskCategory) => void;
+  updateRecurrence: (id: string, recurrence: Recurrence) => void;
   archiveTask: (id: string) => void;
   toggleCompleteTask: (id: string) => void;
   restoreTask: (id: string) => void;
+  refreshRecurringTasks: () => void;
+  snoozeTask: (id: string, hours: number) => void;
+  completeTaskNow: (id: string) => void;
+  wakeRecurringTask: (id: string) => void;
   changeTopology: (mode: TopologyMode) => void;
   openShutter: (id: string) => void;
   closeShutter: () => void;
@@ -148,6 +171,183 @@ export const todayKey = () => {
   return `${y}-${m}-${day}`;
 };
 
+/* ---------------------------------------------------------------------------
+   Time & recurrence engine
+   All dates are stored as local-time ISO strings so a task scheduled for
+   "09:00" stays at 09:00 regardless of timezone shifts or daylight savings.
+--------------------------------------------------------------------------- */
+
+export const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
+export const DAY_NAMES_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as const;
+
+export function dateKeyOf(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+export function parseDateKey(key: string): Date {
+  const [y, m, d] = key.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+export function startOfDay(d: Date): Date {
+  const out = new Date(d);
+  out.setHours(0, 0, 0, 0);
+  return out;
+}
+
+export function isoLocal(d: Date): string {
+  const p = (n: number, len = 2) => String(n).padStart(len, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+
+export function parseIsoLocal(s: string): Date {
+  const [datePart, timePart] = s.split('T');
+  const [y, m, d] = datePart.split('-').map(Number);
+  const [hh, mm, ss] = (timePart || '00:00:00').split(':').map(Number);
+  return new Date(y, m - 1, d, hh || 0, mm || 0, ss || 0);
+}
+
+export function addDays(d: Date, n: number): Date {
+  const out = new Date(d);
+  out.setDate(out.getDate() + n);
+  return out;
+}
+
+export function daysBetween(aKey: string, bKey: string): number {
+  const a = startOfDay(parseDateKey(aKey));
+  const b = startOfDay(parseDateKey(bKey));
+  return Math.round((b.getTime() - a.getTime()) / 86400000);
+}
+
+export function daysInMonth(d: Date): number {
+  return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+}
+
+export function monthDiff(a: Date, b: Date): number {
+  return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
+}
+
+export function defaultRecurrence(): Recurrence {
+  return {
+    frequency: 'daily',
+    interval: 1,
+    days: [],
+    time: '09:00',
+    anchorDate: todayKey(),
+    monthDay: 1,
+  };
+}
+
+export function formatRecurrenceTime(time: string): string {
+  const [h, m] = time.split(':').map(Number);
+  const suffix = h >= 12 ? 'PM' : 'AM';
+  const hour12 = h % 12 || 12;
+  return `${hour12}:${String(m ?? 0).padStart(2, '0')} ${suffix}`;
+}
+
+export function recurrenceLabel(r: Recurrence): string {
+  const time = r.time ? ` at ${formatRecurrenceTime(r.time)}` : '';
+  const every = (unit: string) => (r.interval > 1 ? `Every ${r.interval} ${unit}` : `Every ${unit.slice(0, -1)}`);
+  switch (r.frequency) {
+    case 'daily':
+      return `${every('days')}${time}`;
+    case 'weekdays':
+      return `${r.interval > 1 ? `Every ${r.interval} weekdays` : 'Every weekday'}${time}`;
+    case 'weekly': {
+      const days = r.days.length
+        ? r.days.map(d => DAY_NAMES[d]).join(', ')
+        : 'week';
+      return `${r.interval > 1 ? `Every ${r.interval} weeks` : 'Weekly'} on ${days}${time}`;
+    }
+    case 'monthly':
+      return `${every('months')} on day ${r.monthDay ?? 1}${time}`;
+  }
+}
+
+function weekdayCountBetween(anchor: Date, d: Date): number {
+  let count = 0;
+  const cursor = new Date(anchor);
+  cursor.setDate(cursor.getDate() + 1);
+  while (cursor.getTime() <= d.getTime()) {
+    const dow = cursor.getDay();
+    if (dow !== 0 && dow !== 6) count++;
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return count;
+}
+
+export function matchesRecurrenceDay(r: Recurrence, date: Date, anchor: Date): boolean {
+  const dow = date.getDay();
+  switch (r.frequency) {
+    case 'daily':
+      return daysBetween(dateKeyOf(anchor), dateKeyOf(date)) % Math.max(1, r.interval) === 0;
+    case 'weekdays':
+      if (dow === 0 || dow === 6) return false;
+      return weekdayCountBetween(anchor, date) % Math.max(1, r.interval) === 0;
+    case 'weekly':
+      if (r.days.length > 0 && !r.days.includes(dow)) return false;
+      return Math.floor(daysBetween(dateKeyOf(anchor), dateKeyOf(date)) / 7) % Math.max(1, r.interval) === 0;
+    case 'monthly': {
+      const target = Math.min(r.monthDay ?? 1, daysInMonth(date));
+      if (date.getDate() !== target) return false;
+      return monthDiff(anchor, date) % Math.max(1, r.interval) === 0;
+    }
+  }
+}
+
+/** Next occurrence strictly after `from`, or null if none within 2 years. */
+export function nextOccurrence(r: Recurrence, from: Date = new Date()): Date | null {
+  const anchor = parseDateKey(r.anchorDate || dateKeyOf(from));
+  const start = startOfDay(from);
+  start.setDate(start.getDate() + 1);
+
+  for (let i = 0; i < 730; i++) {
+    const candidate = addDays(start, i);
+    if (matchesRecurrenceDay(r, candidate, anchor)) {
+      if (r.time) {
+        const [h, m] = r.time.split(':').map(Number);
+        candidate.setHours(h, m, 0, 0);
+      } else {
+        candidate.setHours(0, 0, 0, 0);
+      }
+      return candidate;
+    }
+  }
+  return null;
+}
+
+/** Consecutive occurrences completed, ending today or yesterday. */
+export function streakForTask(t: Task): number {
+  if (!t.recurrence) return 0;
+  const dates = new Set(t.completionDates || []);
+  if (dates.size === 0) return 0;
+
+  const anchor = parseDateKey(t.recurrence.anchorDate);
+  let cursor = startOfDay(new Date());
+
+  // A streak can still be alive if the most recent completion was yesterday.
+  if (!dates.has(dateKeyOf(cursor))) {
+    cursor.setDate(cursor.getDate() - 1);
+    if (!dates.has(dateKeyOf(cursor))) return 0;
+  }
+
+  let streak = 0;
+  while (cursor.getTime() >= anchor.getTime()) {
+    if (matchesRecurrenceDay(t.recurrence, cursor, anchor)) {
+      if (dates.has(dateKeyOf(cursor))) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
+}
+
 function applyTopology(tasks: Task[], mode: TopologyMode, focusedTaskId: string | null, gridLayout: string) {
   let newFocusedId = focusedTaskId;
   const cols = gridLayout === '8x4' ? 8 : 6;
@@ -155,7 +355,7 @@ function applyTopology(tasks: Task[], mode: TopologyMode, focusedTaskId: string 
 
   tasks.forEach(t => {
     t.parked = false;
-    if (t.isPen) return;
+    if (t.isPen || t.dormant) return;
     if (mode === 'normal') {
       t.w = t.naturalW; t.h = t.naturalH;
     } else if (mode === 'deep') {
@@ -406,15 +606,156 @@ export const useStore = create<AppState>()(
 
       addTile: (title, cat, w = 2, h = 1) => set((state) => {
         get().pushSnapshot();
-        const type = 'task';
         const newTask: Task = {
-          id: uid(), title, cat, w, h, naturalW: w, naturalH: h, type,
+          id: uid(), title, cat, w, h, naturalW: w, naturalH: h, type: 'task',
           notes: '', subtasks: [], timer: { total: 1500, remaining: 1500, running: false },
           energy: 3, completed: false, tab: 'notes'
         };
         setTimeout(() => get().logActivity(`Created "${title}"`, cat === 'focus' ? 'focus' : cat === 'fire' ? 'fire' : 'admin'), 0);
         return { tasks: [...state.tasks, newTask] };
       }),
+
+      addRecurringTile: (title, cat, w = 1, h = 1, recurrence) => set((state) => {
+        get().pushSnapshot();
+        const due = nextOccurrence(recurrence);
+        const newTask: Task = {
+          id: uid(), title, cat, w, h, naturalW: w, naturalH: h, type: 'task',
+          notes: '', subtasks: [], timer: { total: 1500, remaining: 1500, running: false },
+          energy: cat === 'admin' ? 1 : 2, completed: false, tab: 'notes',
+          recurrence, nextDue: due ? isoLocal(due) : null,
+          dueDate: due ? isoLocal(due) : null,
+          lastCompleted: null, completionDates: [], dormant: true,
+        };
+        setTimeout(() => get().logActivity(`Created recurring task "${title}" — ${recurrenceLabel(recurrence)}`, 'system'), 0);
+        return { tasks: [...state.tasks, newTask] };
+      }),
+
+      updateRecurrence: (id, recurrence) => {
+        const task = get().tasks.find(t => t.id === id);
+        if (!task) return;
+        get().pushSnapshot();
+        const due = nextOccurrence(recurrence);
+        set((state) => ({
+          tasks: state.tasks.map(t => t.id === id ? {
+            ...t,
+            recurrence,
+            nextDue: due ? isoLocal(due) : null,
+            dueDate: due ? isoLocal(due) : null,
+            dormant: true,
+            completed: false,
+            archived: false,
+          } : t)
+        }));
+        get().logActivity(`Updated recurrence for "${task.title}"`, 'system');
+      },
+
+      snoozeTask: (id, hours) => {
+        const task = get().tasks.find(t => t.id === id);
+        if (!task) return;
+        get().pushSnapshot();
+        const now = new Date();
+        const next = new Date(now.getTime() + hours * 3600000);
+        set((state) => ({
+          tasks: state.tasks.map(t => t.id === id ? {
+            ...t,
+            dormant: true,
+            completed: false,
+            archived: false,
+            dueDate: isoLocal(next),
+            nextDue: isoLocal(next),
+          } : t)
+        }));
+        get().addToast(`Snoozed "${task.title}" until ${formatRecurrenceTime(`${String(next.getHours()).padStart(2, '0')}:${String(next.getMinutes()).padStart(2, '0')}`)}`, '⏳');
+        get().logActivity(`Snoozed "${task.title}"`, 'system');
+      },
+
+      completeTaskNow: (id) => {
+        const task = get().tasks.find(t => t.id === id);
+        if (!task) return;
+        get().pushSnapshot();
+
+        if (task.recurrence) {
+          const now = new Date();
+          const due = nextOccurrence(task.recurrence, now);
+          const today = todayKey();
+          const completionDates = Array.from(new Set([...(task.completionDates || []), today]));
+          const newStreak = streakForTask({ ...task, completionDates });
+          set((state) => ({
+            tasks: state.tasks.map(t => t.id === id ? {
+              ...t,
+              completed: false,
+              archived: false,
+              dormant: true,
+              lastCompleted: today,
+              completionDates,
+              dueDate: due ? isoLocal(due) : null,
+              nextDue: due ? isoLocal(due) : null,
+              timer: t.timer ? { ...t.timer, running: false } : t.timer,
+            } : t)
+          }));
+          get().addToast(`✓ "${task.title}" — next ${task.recurrence.time ? `at ${formatRecurrenceTime(task.recurrence.time)}` : 'occurrence'}. Streak ${newStreak} 🔥`, '⟳');
+          get().logActivity(`Completed recurring "${task.title}"`, task.cat === 'focus' ? 'focus' : task.cat === 'fire' ? 'fire' : 'admin');
+          return;
+        }
+
+        // Non-recurring: standard complete
+        get().logActivity(`Completed "${task.title}"`, task.cat === 'focus' ? 'focus' : task.cat === 'fire' ? 'fire' : 'admin');
+        set((state) => ({
+          tasks: state.tasks.map(t => t.id === id ? {
+            ...t,
+            completed: true,
+            w: 1,
+            h: 1,
+            timer: t.timer ? { ...t.timer, running: false } : t.timer
+          } : t)
+        }));
+      },
+
+      wakeRecurringTask: (id) => {
+        const task = get().tasks.find(t => t.id === id);
+        if (!task?.recurrence) return;
+        get().pushSnapshot();
+        set((state) => ({
+          tasks: state.tasks.map(t => t.id === id ? {
+            ...t,
+            dormant: false,
+            completed: false,
+            archived: false,
+            w: t.naturalW,
+            h: t.naturalH,
+          } : t)
+        }));
+        get().addToast(`"${task.title}" brought onto the grid now`, '⟳');
+      },
+
+      refreshRecurringTasks: () => {
+        const state = get();
+        const now = new Date();
+        let changed = false;
+        const nextTasks = state.tasks.map(t => {
+          if (!t.recurrence || t.completed || t.archived) return t;
+
+          const dueDate = t.dueDate ? parseIsoLocal(t.dueDate) : null;
+          const nextDue = t.nextDue ? parseIsoLocal(t.nextDue) : null;
+          const isDue = (dueDate && dueDate.getTime() <= now.getTime())
+            || (nextDue && nextDue.getTime() <= now.getTime());
+
+          if (t.dormant && isDue) {
+            changed = true;
+            return {
+              ...t,
+              dormant: false,
+              completed: false,
+              archived: false,
+              w: t.naturalW,
+              h: t.naturalH,
+            };
+          }
+          return t;
+        });
+
+        if (changed) set({ tasks: nextTasks });
+      },
 
       updateTitle: (id, title) => {
         const trimmed = title.trim();
@@ -450,6 +791,12 @@ export const useStore = create<AppState>()(
       toggleCompleteTask: (id) => {
         const task = get().tasks.find(t => t.id === id);
         if (!task) return;
+
+        if (task.recurrence && !task.completed) {
+          get().completeTaskNow(id);
+          return;
+        }
+
         get().pushSnapshot();
         const nextCompleted = !task.completed;
         const TOTAL_CELLS = get().gridLayout === '8x4' ? 32 : get().gridLayout === '6x5' ? 30 : 24;
@@ -871,7 +1218,7 @@ export const useStore = create<AppState>()(
 
 export function occupiedCells(tasks: Task[]): number {
   return tasks.reduce((sum, t) => {
-    if (t.archived || t.isPen) return sum;
+    if (t.archived || t.isPen || t.dormant) return sum;
     return sum + (t.parked ? 1 : t.w * t.h);
   }, 0);
 }
@@ -901,7 +1248,7 @@ export function energyAllocation(tasks: Task[]): {
   total: number;
   totalHours: number;
 } {
-  const active = tasks.filter(t => !t.completed && !t.isPen);
+  const active = tasks.filter(t => !t.completed && !t.isPen && !t.dormant);
   let focus = 0, fire = 0, admin = 0;
   for (const t of active) {
     const e = t.energy ?? (t.cat === 'admin' ? 1 : 2);

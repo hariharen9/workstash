@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useStore, occupiedCells } from '../store';
 import { Tile } from './Tile';
 import { HoldingPenDock } from './HoldingPenDock';
+import { RecurringDock } from './RecurringDock';
 import {
   DndContext,
   closestCenter,
@@ -22,7 +23,7 @@ export const BentoGrid: React.FC<{ onNewTask: () => void }> = ({ onNewTask }) =>
   const TOTAL_CELLS = gridLayout === '8x4' ? 32 : gridLayout === '6x5' ? 30 : 24;
   const used = occupiedCells(tasks);
   const isFull = used >= TOTAL_CELLS;
-  const gridTasks = tasks.filter(t => !t.archived && !t.isPen);
+  const gridTasks = tasks.filter(t => !t.archived && !t.isPen && !t.dormant);
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId]     = useState<string | null>(null);
@@ -139,6 +140,7 @@ export const BentoGrid: React.FC<{ onNewTask: () => void }> = ({ onNewTask }) =>
           </DragOverlay>
         </DndContext>
       </div>
+      <RecurringDock />
       <HoldingPenDock />
     </div>
   );

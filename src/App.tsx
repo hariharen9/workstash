@@ -21,8 +21,27 @@ function App() {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
   const [isDefragging, setIsDefragging] = useState(false);
-  const { undo, redo, undoStack, redoStack } = useStore();
+  const { undo, redo, undoStack, redoStack, refreshRecurringTasks } = useStore();
   const { syncStatus, syncError, retrySync } = useAuth();
+
+  // Wake any recurring tasks whose due time has arrived. Runs on mount, on
+  // focus/visibility, and every 60s so a "daily 09:00" task surfaces promptly.
+  useEffect(() => {
+    refreshRecurringTasks();
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') refreshRecurringTasks();
+    };
+    const onFocus = () => refreshRecurringTasks();
+    const interval = setInterval(() => refreshRecurringTasks(), 60000);
+
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [refreshRecurringTasks]);
 
   useEffect(() => {
     const lenis = new Lenis({
