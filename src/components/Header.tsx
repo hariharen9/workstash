@@ -5,7 +5,7 @@ import { useAuth } from '../auth';
 import { GlowCard } from './GlowCard';
 
 export const Header: React.FC<{ onNewTask: () => void; onDefrag: () => void; onOpenSettings: () => void; onOpenHelp: () => void; onOpenArchive: () => void; onOpenRhythm: () => void }> = ({ onNewTask, onDefrag, onOpenSettings, onOpenHelp, onOpenArchive, onOpenRhythm }) => {
-  const { mode, changeTopology, tasks, addToast, gridLayout } = useStore();
+  const { mode, changeTopology, tasks, addToast, gridLayout, selectedTagFilter, setSelectedTagFilter } = useStore();
   const { user, signOut } = useAuth();
 
   const TOTAL_CELLS = gridLayout === '8x4' ? 32 : gridLayout === '6x5' ? 30 : 24;
@@ -127,6 +127,22 @@ export const Header: React.FC<{ onNewTask: () => void; onDefrag: () => void; onO
             </div>
           </div>
         </div>
+
+        {selectedTagFilter && (
+          <button
+            type="button"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-violet-dim border border-violet/40 text-violet font-mono text-[0.72rem] font-semibold hover:bg-violet/20 transition-colors cursor-pointer shadow-sm"
+            onClick={() => {
+              setSelectedTagFilter(null);
+              addToast('Cleared tag spotlight', '✓');
+            }}
+            title="Click to clear tag spotlight"
+          >
+            <span>Spotlight: {selectedTagFilter}</span>
+            <span className="text-[0.65rem] opacity-70">✕</span>
+          </button>
+        )}
+
         <button
           type="button"
           className="cursor-pointer font-semibold text-[0.8125rem] py-2 px-3.5 rounded-[10px] transition-all duration-200 flex items-center gap-1.5 bg-elevated text-muted border border-line hover:text-text hover:border-faint"

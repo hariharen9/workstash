@@ -45,7 +45,7 @@ const ResizeGripIcon = () => (
 );
 
 export const Tile: React.FC<{ task: Task; isBeingDragged?: boolean; isDragTarget?: boolean }> = ({ task, isBeingDragged = false, isDragTarget = false }) => {
-  const { archiveTask, toggleCompleteTask, openShutter, setTileSize, tasks, mode, setFocusedTask, addToast, setIsHoveringTask, gridLayout, updateTitle, updateCategory } = useStore();
+  const { archiveTask, toggleCompleteTask, openShutter, setTileSize, tasks, mode, setFocusedTask, addToast, setIsHoveringTask, gridLayout, updateTitle, updateCategory, selectedTagFilter, setSelectedTagFilter } = useStore();
 
   const TOTAL_CELLS = gridLayout === '8x4' ? 32 : gridLayout === '6x5' ? 30 : 24;
   const maxCols = gridLayout === '8x4' ? 8 : 6;
@@ -358,9 +358,17 @@ export const Tile: React.FC<{ task: Task; isBeingDragged?: boolean; isDragTarget
     )
   );
 
+  const isTagSpotlightActive = !!selectedTagFilter;
+  const matchesTag = selectedTagFilter ? (task.tags || []).includes(selectedTagFilter) : true;
+
   const footer = isMicro ? (
     <div className="flex items-center gap-1.5 shrink-0 mt-auto pt-1.5 w-full">
       {catBadge}
+      {task.tags && task.tags.length > 0 && (
+        <span className="font-mono text-[0.55rem] text-violet truncate" title={task.tags.join(', ')}>
+          {task.tags[0]}
+        </span>
+      )}
       {task.completed && (
         <span className="font-mono text-[0.58rem] font-semibold text-teal bg-teal/15 px-1.5 py-0.5 rounded ml-auto" title="Awaiting end-of-day Defrag">
           ✓ Done
@@ -368,15 +376,46 @@ export const Tile: React.FC<{ task: Task; isBeingDragged?: boolean; isDragTarget
       )}
     </div>
   ) : (
-    <div className="flex items-center gap-2 shrink-0 mt-2.5 pt-0.5">
+    <div className="flex items-center gap-2 shrink-0 mt-2.5 pt-0.5 flex-wrap">
       {catBadge}
+      {task.tags && task.tags.length > 0 && (
+        <div className="flex items-center gap-1 overflow-x-auto max-w-full py-0.5" data-lenis-prevent="true">
+          {task.tags.map(tag => {
+            const isCurrentFilter = selectedTagFilter === tag;
+            return (
+              <button
+                key={tag}
+                type="button"
+                className={`font-mono text-[0.6rem] font-medium px-1.5 py-0.5 rounded transition-all border cursor-pointer ${
+                  isCurrentFilter
+                    ? 'bg-violet text-void border-violet font-semibold shadow-sm'
+                    : 'bg-elevated/70 hover:bg-elevated border-line/60 text-violet/90 hover:text-violet'
+                }`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const next = isCurrentFilter ? null : tag;
+                  setSelectedTagFilter(next);
+                  if (next) {
+                    addToast(`Spotlighting ${tag}`, '◈');
+                  } else {
+                    addToast('Cleared tag spotlight', '✓');
+                  }
+                }}
+                title={isCurrentFilter ? 'Click to clear filter' : `Spotlight tasks with ${tag}`}
+              >
+                {tag}
+              </button>
+            );
+          })}
+        </div>
+      )}
       {task.completed && (
         <span className="font-mono text-[0.65rem] font-semibold text-teal bg-teal/15 border border-teal/30 px-2 py-0.5 rounded-md" title="This block will be archived on Defrag">
           Awaiting Defrag
         </span>
       )}
       <span
-        className={`size-ribbon transition-opacity duration-200 ${isHovered ? 'opacity-100' : 'opacity-0'}`}
+        className={`size-ribbon transition-opacity duration-200 ml-auto ${isHovered ? 'opacity-100' : 'opacity-0'}`}
         title={`${task.w}×${task.h} grid cells`}
       >
         {task.w}×{task.h}
@@ -393,6 +432,10 @@ export const Tile: React.FC<{ task: Task; isBeingDragged?: boolean; isDragTarget
       glowColor={glowColorMap[task.cat as keyof typeof glowColorMap] || 'blue'}
       className={`bg-surface/95 shadow-tile overflow-hidden flex flex-col transition-[background,box-shadow,opacity,filter] duration-300 min-h-0 relative ${catClass} ${
         isMicro ? 'p-3' : isLarge ? 'p-4' : 'p-3.5'
+      } ${
+        isTagSpotlightActive && matchesTag ? '!opacity-100 ring-2 ring-violet shadow-[0_0_24px_rgba(155,140,255,0.45)]' : ''
+      } ${
+        isTagSpotlightActive && !matchesTag ? 'opacity-25 saturate-[0.25] filter blur-[0.4px]' : ''
       } ${
         task.completed ? 'opacity-[0.78] saturate-[0.8] border-teal/40 bg-teal-dim/10 ring-1 ring-teal/20' : ''
       } ${

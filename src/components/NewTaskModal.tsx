@@ -10,6 +10,7 @@ import {
   Plus,
   Zap,
   Repeat,
+  Hash,
 } from 'lucide-react';
 import {
   useStore,
@@ -20,6 +21,8 @@ import {
   DAY_NAMES,
   recurrenceLabel,
   defaultRecurrence,
+  formatTag,
+  getAllTags,
 } from '../store';
 import { GlowCard } from './GlowCard';
 
@@ -100,6 +103,8 @@ const TIMER_PRESETS = [
   { label: '60m', seconds: 3600 },
 ];
 
+const DEFAULT_POPULAR_TAGS = ['#frontend', '#backend', '#design', '#bug', '#infra', '#ops', '#sprint'];
+
 export const NewTaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const { addTile, addRecurringTile, tasks, addToast, gridLayout } = useStore();
   const TOTAL_CELLS = gridLayout === '8x4' ? 32 : gridLayout === '6x5' ? 30 : 24;
@@ -112,6 +117,8 @@ export const NewTaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
   const [notes, setNotes] = useState<string>('');
   const [subtasks, setSubtasks] = useState<string[]>([]);
   const [newSubtaskInput, setNewSubtaskInput] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
   const [kitTab, setKitTab] = useState<'subtasks' | 'notes' | 'timer' | 'energy'>('subtasks');
 
   // Recurring state
@@ -119,6 +126,10 @@ export const NewTaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
 
   const titleInputRef = useRef<HTMLInputElement>(null);
   const subtaskInputRef = useRef<HTMLInputElement>(null);
+  const tagInputRef = useRef<HTMLInputElement>(null);
+
+  const existingWorkspaceTags = getAllTags(tasks);
+  const availableSuggestions = Array.from(new Set([...existingWorkspaceTags, ...DEFAULT_POPULAR_TAGS]));
 
   const usedCells = occupiedCells(tasks);
   const currentCategoryMeta = CATEGORIES.find(c => c.id === cat) || CATEGORIES[0];
@@ -136,6 +147,8 @@ export const NewTaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
       setNotes('');
       setSubtasks([]);
       setNewSubtaskInput('');
+      setTags([]);
+      setTagInput('');
       setActiveTab('standard');
       setKitTab('subtasks');
       setRecurrence(defaultRecurrence());
@@ -156,7 +169,7 @@ export const NewTaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, title, cat, energy, timerSeconds, notes, subtasks, recurrence, activeTab]);
+  }, [isOpen, title, cat, energy, timerSeconds, notes, subtasks, tags, recurrence, activeTab]);
 
   if (!isOpen) return null;
 
@@ -182,6 +195,28 @@ export const NewTaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
     setSubtasks(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleAddTag = (rawTag: string) => {
+    const formatted = formatTag(rawTag);
+    if (formatted && !tags.includes(formatted)) {
+      setTags(prev => [...prev, formatted]);
+    }
+    setTagInput('');
+  };
+
+  const handleToggleTag = (tag: string) => {
+    const formatted = formatTag(tag);
+    if (!formatted) return;
+    if (tags.includes(formatted)) {
+      setTags(prev => prev.filter(t => t !== formatted));
+    } else {
+      setTags(prev => [...prev, formatted]);
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setTags(prev => prev.filter(t => t !== tagToRemove));
+  };
+
   const toggleWeekday = (d: number) => {
     setRecurrence(r => ({
       ...r,
@@ -203,6 +238,7 @@ export const NewTaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
         subtasks,
         timerSeconds,
         energy,
+        tags,
       });
       addToast(`Recurring rhythm armed — ${recurrenceLabel(recurrence)}`, '⟳');
       onClose();
@@ -219,6 +255,7 @@ export const NewTaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
           subtasks,
           timerSeconds,
           energy,
+          tags,
         });
         if (size !== preferred) {
           addToast(`Grid tight — placed as ${size.w}×${size.h}. Drag corner to resize.`, '⚡');
@@ -324,6 +361,94 @@ export const NewTaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
                 value={title}
                 onChange={e => setTitle(e.target.value)}
               />
+            </div>
+
+            {/* Tags System */}
+            <div className="flex flex-col gap-2 p-3.5 rounded-xl bg-elevated/40 border border-line/70">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-muted">
+                  <Hash size={13} className="text-violet" />
+                  <label className="text-[0.7rem] font-semibold tracking-[0.06em] uppercase">
+                    Tags & Labels
+                  </label>
+                </div>
+                <span className="text-[0.68rem] font-mono text-faint">{tags.length} selected</span>
+              </div>
+
+              {/* Tag Input Field */}
+              <div className="flex gap-1.5">
+                <div className="relative flex-1">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-faint font-mono text-[0.8rem]">#</span>
+                  <input
+                    ref={tagInputRef}
+                    type="text"
+                    className="tile-field !py-1.5 !pl-7 !pr-2.5 !text-[0.78rem]"
+                    placeholder="Add tag (e.g. frontend, bug, v2)... Enter"
+                    value={tagInput}
+                    onChange={e => setTagInput(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' || e.key === ',') {
+                        e.preventDefault();
+                        handleAddTag(tagInput);
+                      }
+                    }}
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="tile-chip !px-3 !py-1.5 text-text hover:border-violet flex items-center gap-1 shrink-0 cursor-pointer"
+                  onClick={() => handleAddTag(tagInput)}
+                >
+                  <Plus size={13} />
+                  <span>Add Tag</span>
+                </button>
+              </div>
+
+              {/* Active Selected Tags */}
+              {tags.length > 0 && (
+                <div className="flex gap-1.5 flex-wrap pt-1">
+                  {tags.map(tag => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center gap-1 font-mono text-[0.72rem] font-semibold px-2.5 py-0.5 rounded-md bg-violet/15 border border-violet/30 text-violet"
+                    >
+                      <span>{tag}</span>
+                      <button
+                        type="button"
+                        className="hover:text-danger cursor-pointer ml-0.5"
+                        onClick={() => handleRemoveTag(tag)}
+                        title="Remove tag"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Suggestion Chips */}
+              <div className="flex flex-col gap-1 pt-1">
+                <span className="text-[0.65rem] text-faint font-medium">Quick suggestions:</span>
+                <div className="flex gap-1.5 flex-wrap max-w-full">
+                  {availableSuggestions.map(suggestion => {
+                    const isSelected = tags.includes(suggestion);
+                    return (
+                      <button
+                        key={suggestion}
+                        type="button"
+                        className={`text-[0.68rem] font-mono px-2 py-0.5 rounded-md border transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-violet text-void border-violet/50 shadow-sm font-semibold'
+                            : 'bg-elevated/80 border-line/60 text-muted hover:text-text hover:border-faint'
+                        }`}
+                        onClick={() => handleToggleTag(suggestion)}
+                      >
+                        {suggestion}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
 
             {/* Category Selector Cards */}
@@ -490,7 +615,7 @@ export const NewTaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
 
               {/* Bento Card Simulation */}
               <div
-                className={`rounded-2xl border p-4 bg-surface shadow-tile flex flex-col gap-3 min-h-[160px] relative overflow-hidden transition-all duration-300 ${
+                className={`rounded-2xl border p-4 bg-surface shadow-tile flex flex-col gap-3 min-h-[175px] relative overflow-hidden transition-all duration-300 ${
                   currentCategoryMeta.color === 'violet'
                     ? 'border-violet/30 shadow-[inset_3px_0_0_#9B8CFF]'
                     : currentCategoryMeta.color === 'amber'
@@ -499,9 +624,27 @@ export const NewTaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
                 }`}
               >
                 <div className="flex items-start justify-between gap-2">
-                  <h4 className="font-display font-semibold text-[0.92rem] text-text m-0 break-words line-clamp-2">
-                    {title.trim() || 'Untitled Task Block'}
-                  </h4>
+                  <div className="flex flex-col min-w-0 flex-1">
+                    <h4 className="font-display font-semibold text-[0.92rem] text-text m-0 break-words line-clamp-2">
+                      {title.trim() || 'Untitled Task Block'}
+                    </h4>
+                    {/* Tags preview in card */}
+                    {tags.length > 0 && (
+                      <div className="flex gap-1 flex-wrap mt-1">
+                        {tags.slice(0, 3).map(tag => (
+                          <span
+                            key={tag}
+                            className="font-mono text-[0.6rem] font-semibold px-1.5 py-0.2 rounded bg-elevated border border-line text-violet"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                        {tags.length > 3 && (
+                          <span className="font-mono text-[0.58rem] text-faint">+{tags.length - 3}</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
                   <span
                     className={`font-mono text-[0.625rem] font-semibold tracking-[0.04em] uppercase px-2 py-0.5 rounded-md shrink-0 ${
                       currentCategoryMeta.color === 'violet'

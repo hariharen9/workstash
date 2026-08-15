@@ -4,6 +4,13 @@ import { GlowCard } from './GlowCard';
 
 export const ArchiveModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const { tasks, restoreTask, gridLayout } = useStore();
+  const [filterTag, setFilterTag] = React.useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setFilterTag(null);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -18,7 +25,12 @@ export const ArchiveModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
 
   if (!isOpen) return null;
 
-  const archivedTasks = tasks.filter(t => t.archived && !t.isPen);
+  const allArchived = tasks.filter(t => t.archived && !t.isPen);
+  const archivedTags = Array.from(new Set(allArchived.flatMap(t => t.tags || []))).sort();
+
+  const archivedTasks = filterTag
+    ? allArchived.filter(t => t.tags && t.tags.includes(filterTag))
+    : allArchived;
 
   const TOTAL_CELLS = gridLayout === '8x4' ? 32 : gridLayout === '6x5' ? 30 : 24;
   const used = occupiedCells(tasks);
@@ -38,14 +50,14 @@ export const ArchiveModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
         customSize
         glowColor="blue"
         data-lenis-prevent="true"
-        className="w-full max-w-[620px] max-h-[80vh] bg-surface rounded-2xl flex flex-col shadow-2xl relative overflow-hidden"
+        className="w-full max-w-[660px] max-h-[85vh] bg-surface rounded-2xl flex flex-col shadow-2xl relative overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center gap-3 px-6 py-4 border-b border-line shrink-0">
           <h2 className="text-[1.1rem] font-display font-semibold tracking-[-0.02em] m-0">Archive</h2>
           <span className="bg-elevated text-muted text-[0.7rem] font-mono px-2 py-0.5 rounded-md border border-line">
-            {archivedTasks.length} {archivedTasks.length === 1 ? 'block' : 'blocks'}
+            {allArchived.length} {allArchived.length === 1 ? 'block' : 'blocks'}
           </span>
           {!hasGridRoom && (
             <span className="ml-auto text-[0.7rem] text-amber font-medium bg-amber-dim border border-amber/20 px-2.5 py-1 rounded-lg">
@@ -61,16 +73,50 @@ export const ArchiveModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
           </button>
         </div>
 
+        {/* Tag Filter Chips Bar */}
+        {archivedTags.length > 0 && (
+          <div className="px-6 py-2 border-b border-line/60 bg-elevated/40 flex items-center gap-1.5 overflow-x-auto shrink-0">
+            <span className="text-[0.68rem] text-muted font-mono shrink-0">Tags:</span>
+            <button
+              type="button"
+              className={`text-[0.68rem] font-mono px-2 py-0.5 rounded-md border cursor-pointer transition-all ${
+                filterTag === null
+                  ? 'bg-text text-void font-semibold border-text'
+                  : 'bg-elevated text-muted hover:text-text border-line'
+              }`}
+              onClick={() => setFilterTag(null)}
+            >
+              All ({allArchived.length})
+            </button>
+            {archivedTags.map(tag => (
+              <button
+                key={tag}
+                type="button"
+                className={`text-[0.68rem] font-mono px-2 py-0.5 rounded-md border cursor-pointer transition-all ${
+                  filterTag === tag
+                    ? 'bg-violet text-void font-semibold border-violet shadow-sm'
+                    : 'bg-elevated text-violet/90 hover:text-violet border-line'
+                }`}
+                onClick={() => setFilterTag(filterTag === tag ? null : tag)}
+              >
+                {tag} ({allArchived.filter(t => t.tags?.includes(tag)).length})
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Body */}
         <div
-          className="flex-1 overflow-y-auto p-4 flex flex-col gap-2.5 min-h-0"
+          className="flex-1 overflow-y-auto tile-scroll p-4 flex flex-col gap-2.5 min-h-0"
           data-lenis-prevent="true"
           onWheel={(e) => e.stopPropagation()}
         >
           {archivedTasks.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
               <span className="text-[2rem]">📭</span>
-              <p className="text-muted text-sm m-0 text-center">Nothing archived yet.<br />Completed blocks will appear here.</p>
+              <p className="text-muted text-sm m-0 text-center">
+                {filterTag ? `No archived blocks found with tag ${filterTag}.` : 'Nothing archived yet. Completed blocks will appear here.'}
+              </p>
             </div>
           ) : (
             archivedTasks.map(task => {
@@ -124,6 +170,18 @@ export const ArchiveModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
                     <span className="text-[0.65rem] font-mono text-faint bg-elevated px-2 py-0.5 rounded-md border border-line/60">
                       {task.naturalW}×{task.naturalH}
                     </span>
+                    {task.tags && task.tags.length > 0 && (
+                      <div className="flex items-center gap-1">
+                        {task.tags.map(tag => (
+                          <span
+                            key={tag}
+                            className="text-[0.625rem] font-mono font-semibold px-1.5 py-0.5 rounded bg-violet/10 border border-violet/20 text-violet"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     {subtasksTotal > 0 && (
                       <span className="text-[0.65rem] font-mono text-faint">
                         ✓ {subtasksDone}/{subtasksTotal} tasks

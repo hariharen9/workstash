@@ -38,7 +38,9 @@ export const CommandPalette: React.FC = () => {
     for (const task of allTasks) {
       const titleScore = fuzzyScore(query, task.title);
       const catScore = fuzzyScore(query, task.cat === 'focus' ? 'deep focus' : task.cat === 'fire' ? 'urgent' : 'admin');
-      const best = Math.max(titleScore, catScore);
+      const tagScores = (task.tags || []).map(t => fuzzyScore(query, t));
+      const bestTagScore = tagScores.length > 0 ? Math.max(...tagScores) : 0;
+      const best = Math.max(titleScore, catScore, bestTagScore);
       if (best > 0) results.push({ task, score: best });
     }
     results.sort((a, b) => b.score - a.score);
@@ -165,8 +167,13 @@ export const CommandPalette: React.FC = () => {
                   <span className={`font-mono text-[0.625rem] font-semibold tracking-[0.04em] uppercase px-1.5 py-0.5 rounded-md shrink-0 ${catColor}`}>
                     {catLabel}
                   </span>
-                  <span className="flex-1 min-w-0 truncate text-[0.875rem] font-medium">
-                    {t.title}
+                  <span className="flex-1 min-w-0 truncate text-[0.875rem] font-medium flex items-center gap-2">
+                    <span className="truncate">{t.title}</span>
+                    {t.tags && t.tags.length > 0 && (
+                      <span className="font-mono text-[0.65rem] text-violet opacity-80 shrink-0">
+                        {t.tags.join(' ')}
+                      </span>
+                    )}
                   </span>
                   <span className="text-[0.7rem] text-muted font-mono shrink-0">
                     {t.w}×{t.h}{t.completed ? ' · done' : ''}

@@ -56,6 +56,7 @@ export interface Task {
   naturalH: number;
   notes?: string;
   subtasks?: Subtask[];
+  tags?: string[];
   timer?: { total: number; remaining: number; running: boolean };
   energy?: number;
   completed: boolean;
@@ -95,6 +96,8 @@ interface AppState {
   mode: TopologyMode;
   focusedTaskId: string | null;
   tasks: Task[];
+  selectedTagFilter: string | null;
+  setSelectedTagFilter: (tag: string | null) => void;
   shutterOpen: string | null;
   toasts: Toast[];
   activityLogs: ActivityLog[];
@@ -116,11 +119,14 @@ interface AppState {
   setGridLayout: (layout: GridLayout) => void;
   logActivity: (msg: string, type: ActivityLog['type']) => void;
 
-  addTile: (title: string, cat: TaskCategory, w?: number, h?: number, options?: { notes?: string; subtasks?: string[]; timerSeconds?: number; energy?: number }) => void;
-  addRecurringTile: (title: string, cat: TaskCategory, w?: number, h?: number, recurrence?: Recurrence, options?: { notes?: string; subtasks?: string[]; timerSeconds?: number; energy?: number }) => void;
+  addTile: (title: string, cat: TaskCategory, w?: number, h?: number, options?: { notes?: string; subtasks?: string[]; timerSeconds?: number; energy?: number; tags?: string[] }) => void;
+  addRecurringTile: (title: string, cat: TaskCategory, w?: number, h?: number, recurrence?: Recurrence, options?: { notes?: string; subtasks?: string[]; timerSeconds?: number; energy?: number; tags?: string[] }) => void;
   updateTitle: (id: string, title: string) => void;
   updateCategory: (id: string, cat: TaskCategory) => void;
   updateRecurrence: (id: string, recurrence: Recurrence) => void;
+  addTag: (id: string, tag: string) => void;
+  removeTag: (id: string, tag: string) => void;
+  updateTaskTags: (id: string, tags: string[]) => void;
   archiveTask: (id: string) => void;
   toggleCompleteTask: (id: string) => void;
   restoreTask: (id: string) => void;
@@ -244,6 +250,24 @@ export function formatRecurrenceTime(time: string): string {
   const suffix = h >= 12 ? 'PM' : 'AM';
   const hour12 = h % 12 || 12;
   return `${hour12}:${String(m ?? 0).padStart(2, '0')} ${suffix}`;
+}
+
+export function formatTag(raw: string): string {
+  const clean = raw.trim().replace(/^#+/, '').toLowerCase();
+  return clean ? `#${clean}` : '';
+}
+
+export function getAllTags(tasks: Task[]): string[] {
+  const set = new Set<string>();
+  for (const t of tasks) {
+    if (t.tags && Array.isArray(t.tags)) {
+      for (const tag of t.tags) {
+        const f = formatTag(tag);
+        if (f) set.add(f);
+      }
+    }
+  }
+  return Array.from(set).sort();
 }
 
 export function recurrenceLabel(r: Recurrence): string {
@@ -393,29 +417,29 @@ function createSeedTasks(): Task[] {
       notes: '// reconcile elevated vs elevated-hi\n// check contrast on amber badges', subtasks: [
         { id: uid(), text: 'Pull palette into CSS vars', done: true },
         { id: uid(), text: 'Recheck focus ring contrast', done: false },
-      ], timer: { total: 1500, remaining: 1500, running: false }, energy: 3, completed: false, tab: 'notes' },
+      ], tags: ['#design', '#core'], timer: { total: 1500, remaining: 1500, running: false }, energy: 3, completed: false, tab: 'notes' },
     // 2×2 — tabbed urgent workspace
     { id: uid(), title: 'Prod error spike — /checkout 500s', cat: 'fire', w: 2, h: 2, naturalW: 2, naturalH: 2,
       notes: 'TypeError: Cannot read properties of undefined\n  at validateCart (checkout.ts:88)', subtasks: [
         { id: uid(), text: 'Reproduce locally', done: false },
         { id: uid(), text: 'Check deploy logs', done: false },
-      ], timer: { total: 900, remaining: 900, running: false }, energy: 4, completed: false, tab: 'notes' },
+      ], tags: ['#bug', '#prod'], timer: { total: 900, remaining: 900, running: false }, energy: 4, completed: false, tab: 'notes' },
     // 3×1 — slim wide checklist strip
     { id: uid(), title: 'Sprint planning prep', cat: 'focus', w: 3, h: 1, naturalW: 3, naturalH: 1,
       notes: '', subtasks: [
         { id: uid(), text: 'Review backlog items', done: false },
         { id: uid(), text: 'Estimate story points', done: false },
         { id: uid(), text: 'Draft sprint goal', done: false },
-      ], energy: 2, completed: false },
+      ], tags: ['#planning'], energy: 2, completed: false },
     // 1×2 — tall narrow column
     { id: uid(), title: 'Review PR #482', cat: 'focus', w: 1, h: 2, naturalW: 1, naturalH: 2,
       notes: '', subtasks: [
         { id: uid(), text: 'Check migration rollback', done: false },
         { id: uid(), text: 'Test edge cases', done: false },
-      ], energy: 2, completed: false },
-    { id: uid(), title: 'Approve expense report', cat: 'admin', w: 1, h: 1, naturalW: 1, naturalH: 1, completed: false },
-    { id: uid(), title: 'Reply: vendor contract q\'s', cat: 'admin', w: 1, h: 1, naturalW: 1, naturalH: 1, completed: false },
-    { id: uid(), title: 'Book flight for offsite', cat: 'admin', w: 1, h: 1, naturalW: 1, naturalH: 1, completed: false },
+      ], tags: ['#code-review'], energy: 2, completed: false },
+    { id: uid(), title: 'Approve expense report', cat: 'admin', w: 1, h: 1, naturalW: 1, naturalH: 1, tags: ['#finance'], completed: false },
+    { id: uid(), title: 'Reply: vendor contract q\'s', cat: 'admin', w: 1, h: 1, naturalW: 1, naturalH: 1, tags: ['#ops'], completed: false },
+    { id: uid(), title: 'Book flight for offsite', cat: 'admin', w: 1, h: 1, naturalW: 1, naturalH: 1, tags: ['#travel'], completed: false },
     { id: uid(), title: 'Holding Pen', cat: 'pen', w: 2, h: 1, naturalW: 2, naturalH: 1, isPen: true, items: ['Slack: check w/ Dana re: staging creds'], completed: false },
   ];
 }
@@ -486,6 +510,7 @@ function buildInitialState() {
     mode: 'normal' as TopologyMode,
     focusedTaskId: newFocusedId,
     tasks,
+    selectedTagFilter: null as string | null,
     shutterOpen: null as string | null,
     toasts: [] as Toast[],
     gridLayout: '6x4' as GridLayout,
@@ -601,6 +626,8 @@ export const useStore = create<AppState>()(
         toasts: state.toasts.filter(t => t.id !== id)
       })),
 
+      setSelectedTagFilter: (tag) => set({ selectedTagFilter: tag ? formatTag(tag) : null }),
+
       addTile: (title, cat, w = 2, h = 1, options) => set((state) => {
         get().pushSnapshot();
         const timerTotal = options?.timerSeconds ?? 1500;
@@ -609,10 +636,12 @@ export const useStore = create<AppState>()(
           text: text.trim(),
           done: false
         }));
+        const initialTags = Array.from(new Set((options?.tags || []).map(formatTag).filter(Boolean)));
         const newTask: Task = {
           id: uid(), title, cat, w, h, naturalW: w, naturalH: h,
           notes: options?.notes ?? '',
           subtasks: initialSubtasks,
+          tags: initialTags,
           timer: { total: timerTotal, remaining: timerTotal, running: false },
           energy: options?.energy ?? (cat === 'admin' ? 1 : cat === 'fire' ? 4 : 3),
           completed: false,
@@ -631,10 +660,12 @@ export const useStore = create<AppState>()(
           text: text.trim(),
           done: false
         }));
+        const initialTags = Array.from(new Set((options?.tags || []).map(formatTag).filter(Boolean)));
         const newTask: Task = {
           id: uid(), title, cat, w, h, naturalW: w, naturalH: h,
           notes: options?.notes ?? '',
           subtasks: initialSubtasks,
+          tags: initialTags,
           timer: { total: timerTotal, remaining: timerTotal, running: false },
           energy: options?.energy ?? (cat === 'admin' ? 1 : 2),
           completed: false,
@@ -649,6 +680,48 @@ export const useStore = create<AppState>()(
         setTimeout(() => get().logActivity(`Created recurring task "${title}" — ${recurrenceLabel(recurrence)}`, 'system'), 0);
         return { tasks: [...state.tasks, newTask] };
       }),
+
+      addTag: (id, rawTag) => {
+        const tag = formatTag(rawTag);
+        if (!tag) return;
+        const task = get().tasks.find(t => t.id === id);
+        if (!task) return;
+        if (task.tags && task.tags.includes(tag)) return;
+        get().pushSnapshot();
+        set((state) => ({
+          tasks: state.tasks.map(t => t.id === id ? {
+            ...t,
+            tags: [...(t.tags || []), tag]
+          } : t)
+        }));
+        get().logActivity(`Added tag ${tag} to "${task.title}"`, 'system');
+      },
+
+      removeTag: (id, rawTag) => {
+        const tag = formatTag(rawTag);
+        const task = get().tasks.find(t => t.id === id);
+        get().pushSnapshot();
+        set((state) => ({
+          tasks: state.tasks.map(t => t.id === id ? {
+            ...t,
+            tags: (t.tags || []).filter(existing => formatTag(existing) !== tag)
+          } : t)
+        }));
+        if (task) {
+          get().logActivity(`Removed tag ${tag} from "${task.title}"`, 'system');
+        }
+      },
+
+      updateTaskTags: (id, tags) => {
+        const formatted = Array.from(new Set(tags.map(formatTag).filter(Boolean)));
+        get().pushSnapshot();
+        set((state) => ({
+          tasks: state.tasks.map(t => t.id === id ? {
+            ...t,
+            tags: formatted
+          } : t)
+        }));
+      },
 
       updateRecurrence: (id, recurrence) => {
         const task = get().tasks.find(t => t.id === id);

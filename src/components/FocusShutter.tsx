@@ -3,11 +3,13 @@ import { useStore } from '../store';
 import { TileContent } from './TileContent';
 
 export const FocusShutter: React.FC = () => {
-  const { shutterOpen, closeShutter, tasks, isHoveringTask, updateTitle, archiveTask, addToast, setEnergy } = useStore();
+  const { shutterOpen, closeShutter, tasks, isHoveringTask, updateTitle, archiveTask, addToast, setEnergy, addTag, removeTag } = useStore();
 
   const task = tasks.find(t => t.id === shutterOpen);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [draftTitle, setDraftTitle] = useState('');
+  const [isAddingTag, setIsAddingTag] = useState(false);
+  const [newTagVal, setNewTagVal] = useState('');
   const titleInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -118,7 +120,49 @@ export const FocusShutter: React.FC = () => {
                 </button>
               </div>
             </div>
-            <div className="flex-1 min-h-0 mt-5 flex flex-col">
+
+            {/* Tags Row */}
+            <div className="flex items-center gap-1.5 flex-wrap my-2">
+              {task.tags && task.tags.map(tag => (
+                <span key={tag} className="inline-flex items-center gap-1 font-mono text-[0.72rem] font-semibold px-2.5 py-0.5 rounded-md bg-violet/15 border border-violet/30 text-violet">
+                  <span>{tag}</span>
+                  <button type="button" className="hover:text-danger cursor-pointer ml-0.5" onClick={() => removeTag(task.id, tag)} title="Remove tag">×</button>
+                </span>
+              ))}
+              {isAddingTag ? (
+                <input
+                  type="text"
+                  className="tile-field !py-0.5 !px-2 !text-[0.72rem] !w-28 font-mono"
+                  placeholder="#tag..."
+                  autoFocus
+                  value={newTagVal}
+                  onChange={e => setNewTagVal(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      if (newTagVal.trim()) addTag(task.id, newTagVal.trim());
+                      setNewTagVal('');
+                      setIsAddingTag(false);
+                    }
+                    if (e.key === 'Escape') setIsAddingTag(false);
+                  }}
+                  onBlur={() => {
+                    if (newTagVal.trim()) addTag(task.id, newTagVal.trim());
+                    setNewTagVal('');
+                    setIsAddingTag(false);
+                  }}
+                />
+              ) : (
+                <button
+                  type="button"
+                  className="text-[0.68rem] font-mono text-muted hover:text-text bg-elevated/70 hover:bg-elevated border border-line/60 rounded px-2 py-0.5 transition-colors cursor-pointer"
+                  onClick={() => setIsAddingTag(true)}
+                >
+                  + Tag
+                </button>
+              )}
+            </div>
+
+            <div className="flex-1 min-h-0 mt-3 flex flex-col">
               <TileContent task={proxyTask} disableTick />
             </div>
             <div className="shrink-0 mt-4 flex items-center gap-4 rounded-xl border border-line/60 bg-elevated/50 px-4 py-3">
