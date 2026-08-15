@@ -11,7 +11,6 @@ import { HelpModal } from './components/HelpModal';
 import { ArchiveModal } from './components/ArchiveModal';
 import { ActiveTimerWidget } from './components/ActiveTimerWidget';
 import { CommandPalette } from './components/CommandPalette';
-import { MorningIntent } from './components/MorningIntent';
 import { RhythmModal } from './components/RhythmModal';
 import { HoldingPenDock } from './components/HoldingPenDock';
 import { OnboardingTour } from './components/OnboardingTour';
@@ -177,7 +176,6 @@ function App() {
       <HoldingPenDock />
 
       <CommandPalette />
-      <MorningIntent />
       <OnboardingTour />
 
       <ToastContainer />
