@@ -1,9 +1,174 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { Settings } from 'lucide-react';
 import { useStore, type TopologyMode, occupiedCells } from '../store';
 import { useAuth } from '../auth';
 import { GlowCard } from './GlowCard';
 import { playClick, playThemeToggle, playDefrag } from '../sounds';
+
+// ─── Spatial Bloom Action Menu ────────────────────────────────────────────────
+interface BloomItem {
+  label: string;
+  sublabel?: string;
+  icon: React.ReactNode;
+  accentColor: string;
+  badge?: number;
+  onClick: () => void;
+}
+
+const WorkspaceBloom: React.FC<{ items: BloomItem[]; isUrgent?: boolean }> = ({ items, isUrgent }) => {
+  const [open, setOpen] = useState(false);
+  const leaveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  const enter = () => {
+    clearTimeout(leaveTimer.current);
+    setOpen(true);
+  };
+  const leave = () => {
+    leaveTimer.current = setTimeout(() => setOpen(false), 160);
+  };
+
+  const totalBadges = items.reduce((s, i) => s + (i.badge ?? 0), 0);
+
+  return (
+    <div className="relative" onMouseEnter={enter} onMouseLeave={leave}>
+      {/* Trigger — the single compact button */}
+      <button
+        type="button"
+        className={`
+          relative flex items-center gap-2 px-3 py-[7px] rounded-[10px]
+          border font-semibold text-[0.8125rem] cursor-pointer
+          transition-all duration-200 ease-out select-none
+          ${ open
+            ? 'bg-elevated-hi text-text border-faint rounded-b-none border-b-transparent z-[51] shadow-none'
+            : isUrgent
+            ? 'bg-teal-dim/40 text-teal border-teal/40 hover:bg-teal/20'
+            : 'bg-elevated text-muted border-line hover:text-text hover:border-faint'
+          }
+        `}
+      >
+        {/* Animated 3×2 bento-grid icon */}
+        <span
+          className="relative flex flex-wrap gap-[3px] w-[13px] shrink-0 transition-all duration-300"
+          style={{ transform: open ? 'rotate(45deg) scale(0.9)' : 'rotate(0deg) scale(1)' }}
+          aria-hidden
+        >
+          {[0,1,2,3,4,5].map(i => (
+            <span
+              key={i}
+              className="block rounded-[1.5px] transition-all duration-300"
+              style={{
+                width: i < 2 ? '5px' : i < 4 ? '5px' : '5px',
+                height: '3.5px',
+                background: open
+                  ? `hsl(${250 + i * 20} 80% 70%)`
+                  : 'currentColor',
+                transitionDelay: `${i * 18}ms`,
+                opacity: open ? 1 : 0.7,
+              }}
+            />
+          ))}
+        </span>
+        <span>Workspace</span>
+        {/* Live badge when actions pending */}
+        {totalBadges > 0 && !open && (
+          <span className="bg-teal text-void font-mono font-bold text-[0.6rem] px-1.5 py-px rounded-full leading-none shrink-0 animate-pulse">
+            {totalBadges}
+          </span>
+        )}
+        {/* Chevron */}
+        <svg
+          width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor"
+          strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+          className="transition-transform duration-200 opacity-50"
+          style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}
+          aria-hidden
+        >
+          <path d="M2 3.5l3 3 3-3" />
+        </svg>
+      </button>
+
+      {/* Bloom panel */}
+      {open && (
+        <div
+          className="absolute top-full left-0 z-50 min-w-[210px] animate-[bloomPanelIn_0.22s_cubic-bezier(0.2,0.9,0.3,1)_both]"
+          style={{ filter: 'drop-shadow(0 16px 36px rgba(0,0,0,0.45))' }}
+        >
+          {/* Connector bar — bridges trigger bottom to panel top */}
+          <div className="h-px bg-elevated-hi mx-[1px]" />
+
+          <div
+            className="
+              bg-surface/95 backdrop-blur-xl border border-line
+              rounded-b-[14px] rounded-tr-[14px]
+              overflow-hidden shadow-2xl p-1 flex flex-col gap-0.5
+            "
+          >
+            {items.map((item, i) => (
+              <button
+                key={item.label}
+                type="button"
+                onClick={() => { item.onClick(); setOpen(false); }}
+                className="
+                  w-full flex items-center gap-3 px-3 py-2.5 rounded-[10px]
+                  text-left cursor-pointer
+                  hover:bg-elevated-hi transition-all duration-150
+                  group/item
+                "
+                style={{
+                  animation: `bloomItemIn 0.28s cubic-bezier(0.22,1.2,0.36,1) both`,
+                  animationDelay: `${i * 45}ms`,
+                }}
+              >
+                {/* Accent dot */}
+                <span
+                  className="w-1.5 h-1.5 rounded-full shrink-0 transition-transform duration-200 group-hover/item:scale-125"
+                  style={{ background: item.accentColor }}
+                />
+                {/* Icon */}
+                <span className="text-muted group-hover/item:text-text transition-colors duration-150 shrink-0">
+                  {item.icon}
+                </span>
+                {/* Labels */}
+                <span className="flex flex-col flex-1 min-w-0">
+                  <span className="text-[0.8rem] font-semibold text-muted group-hover/item:text-text transition-colors duration-150 leading-none">
+                    {item.label}
+                  </span>
+                  {item.sublabel && (
+                    <span className="text-[0.68rem] text-faint mt-0.5 leading-none font-mono">
+                      {item.sublabel}
+                    </span>
+                  )}
+                </span>
+                {/* Badge */}
+                {(item.badge ?? 0) > 0 && (
+                  <span
+                    className="font-mono font-bold text-[0.6rem] px-2 py-0.5 rounded-full leading-none shrink-0 border"
+                    style={{
+                      background: `${item.accentColor}20`,
+                      color: item.accentColor,
+                      borderColor: `${item.accentColor}40`,
+                    }}
+                  >
+                    {item.badge}
+                  </span>
+                )}
+                {/* Arrow */}
+                <svg
+                  width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor"
+                  strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"
+                  className="text-faint opacity-0 group-hover/item:opacity-100 transition-opacity duration-150 -translate-x-1 group-hover/item:translate-x-0 transition-transform shrink-0"
+                  aria-hidden
+                >
+                  <path d="M2 6h8M6 2l4 4-4 4" />
+                </svg>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const Header: React.FC<{ onNewTask: () => void; onDefrag: () => void; onOpenSettings: () => void; onOpenHelp: () => void; onOpenArchive: () => void; onOpenRhythm: () => void }> = ({ onNewTask, onDefrag, onOpenSettings, onOpenHelp, onOpenArchive, onOpenRhythm }) => {
   const { mode, changeTopology, tasks, addToast, gridLayout, selectedTagFilter, setSelectedTagFilter, theme, toggleTheme, soundsEnabled } = useStore();
@@ -145,38 +310,49 @@ export const Header: React.FC<{ onNewTask: () => void; onDefrag: () => void; onO
           </button>
         )}
 
-        <button
-          type="button"
-          className="cursor-pointer font-semibold text-[0.8125rem] py-2 px-3.5 rounded-[10px] transition-all duration-200 flex items-center gap-1.5 bg-elevated text-muted border border-line hover:text-text hover:border-faint"
-          onClick={onOpenRhythm}
-          title="Recurring tasks"
-        >
-          Rhythm
-        </button>
-        <button
-          type="button"
-          className="cursor-pointer font-semibold text-[0.8125rem] py-2 px-3.5 rounded-[10px] transition-all duration-200 flex items-center gap-1.5 bg-elevated text-muted border border-line hover:text-text hover:border-faint"
-          onClick={onOpenArchive}
-        >
-          Archive
-        </button>
-        <button
-          type="button"
-          className={`cursor-pointer font-semibold text-[0.8125rem] py-2 px-3.5 rounded-[10px] transition-all duration-200 flex items-center gap-1.5 border ${
-            completedOnGridCount > 0
-              ? 'bg-teal-dim/40 text-teal border-teal/40 hover:bg-teal/20 shadow-[0_0_12px_-2px_rgba(79,227,206,0.3)]'
-              : 'bg-elevated text-muted border-line hover:text-text hover:border-faint'
-          }`}
-          onClick={() => { onDefrag(); if (soundsEnabled) playDefrag(); }}
-          title={completedOnGridCount > 0 ? `${completedOnGridCount} completed block${completedOnGridCount > 1 ? 's' : ''} ready for Defrag` : 'Defragment workspace'}
-        >
-          <span>Defrag</span>
-          {completedOnGridCount > 0 && (
-            <span className="bg-teal text-void font-mono font-bold text-[0.65rem] px-1.5 py-0.2 rounded-full leading-none shrink-0">
-              {completedOnGridCount}
-            </span>
-          )}
-        </button>
+        <WorkspaceBloom
+          isUrgent={completedOnGridCount > 0}
+          items={[
+            {
+              label: 'Rhythm',
+              sublabel: 'Recurring task schedules',
+              accentColor: 'var(--color-amber)',
+              icon: (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M3 12h4l3-9 4 18 3-9h4" />
+                </svg>
+              ),
+              onClick: onOpenRhythm,
+            },
+            {
+              label: 'Archive',
+              sublabel: 'View completed and removed tasks',
+              accentColor: 'var(--color-faint)',
+              icon: (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <rect x="2" y="4" width="20" height="5" rx="2" />
+                  <path d="M4 9v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9" />
+                  <path d="M10 13h4" />
+                </svg>
+              ),
+              onClick: onOpenArchive,
+            },
+            {
+              label: 'Defrag',
+              sublabel: completedOnGridCount > 0
+                ? `${completedOnGridCount} block${completedOnGridCount > 1 ? 's' : ''} ready to clear`
+                : 'Archive all completed blocks',
+              accentColor: 'var(--color-teal)',
+              badge: completedOnGridCount > 0 ? completedOnGridCount : undefined,
+              icon: (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M3 6h18M3 12h18M3 18h18" />
+                </svg>
+              ),
+              onClick: () => { onDefrag(); if (soundsEnabled) playDefrag(); },
+            },
+          ]}
+        />
         <button
           type="button"
           className="border-none cursor-pointer font-semibold text-[0.8125rem] py-2 px-3.5 rounded-[10px] transition-all duration-200 flex items-center gap-1.5 bg-text text-void hover:-translate-y-px hover:shadow-[0_8px_20px_-6px_rgba(255,255,255,0.2)]"

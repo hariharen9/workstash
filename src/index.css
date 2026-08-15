@@ -76,6 +76,15 @@
     from { background-color: transparent; }
     to { background-color: var(--color-teal); }
   }
+  @keyframes bloomPanelIn {
+    0% { opacity: 0; transform: translateY(-6px) scale(0.96); filter: blur(4px); }
+    100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); }
+  }
+  @keyframes bloomItemIn {
+    0% { opacity: 0; transform: translateY(-8px) scale(0.95); }
+    70% { transform: translateY(1px) scale(1.01); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
 }
 
 @layer base {
