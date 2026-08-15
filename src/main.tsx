@@ -7,7 +7,7 @@ import { LoginScreen } from './components/LoginScreen'
 import { useStore } from './store'
 
 const Root = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, isGuest, isLoginModalOpen } = useAuth();
   const theme = useStore((s) => s.theme);
 
   useEffect(() => {
@@ -37,8 +37,14 @@ const Root = () => {
     );
   }
 
-  if (!user) return <LoginScreen />;
-  return <App />;
+  if (!user && !isGuest) return <LoginScreen />;
+
+  return (
+    <>
+      <App />
+      {isLoginModalOpen && <LoginScreen isModal />}
+    </>
+  );
 };
 
 const container = document.getElementById('root')!;

@@ -22,6 +22,7 @@ type SyncStatus = 'loading' | 'synced' | 'error';
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
+  isGuest: boolean;
   syncStatus: SyncStatus;
   syncError: string;
   retrySync: () => Promise<void>;
@@ -30,6 +31,10 @@ interface AuthContextValue {
   signUpWithEmail: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   deleteAccount: () => Promise<void>;
+  continueAsGuest: () => void;
+  isLoginModalOpen: boolean;
+  openLoginModal: () => void;
+  closeLoginModal: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -166,6 +171,14 @@ async function connectSync(uid: string, isRetry = false) {
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isGuest, setIsGuest] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('workstash_guest_mode') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('loading');
   const [syncError, setSyncError] = useState('');
 
@@ -191,6 +204,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       setUser(firebaseUser);
+      setIsGuest(false);
+      setIsLoginModalOpen(false);
+      try {
+        localStorage.removeItem('workstash_guest_mode');
+      } catch {
+        // ignore
+      }
       setLoading(true);
       setSyncStatus('loading');
       setSyncError('');
@@ -202,6 +222,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       unsubscribeAuth();
       disconnectSync();
     };
+  }, []);
+
+  const continueAsGuest = useCallback(() => {
+    try {
+      localStorage.setItem('workstash_guest_mode', 'true');
+    } catch {
+      // ignore
+    }
+    setIsGuest(true);
+    setIsLoginModalOpen(false);
+  }, []);
+
+  const openLoginModal = useCallback(() => {
+    setIsLoginModalOpen(true);
+  }, []);
+
+  const closeLoginModal = useCallback(() => {
+    setIsLoginModalOpen(false);
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
@@ -218,6 +256,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const signOut = useCallback(async () => {
     await firebaseSignOut(auth);
+    setIsGuest(true);
+    try {
+      localStorage.setItem('workstash_guest_mode', 'true');
+    } catch {
+      // ignore
+    }
   }, []);
 
   const retrySync = useCallback(async () => {
@@ -244,15 +288,33 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
     try {
       localStorage.removeItem('workstash-v1');
+      localStorage.removeItem('workstash_guest_mode');
     } catch {
       // ignore
     }
     useStore.getState().resetWorkspace();
     setUser(null);
+    setIsGuest(false);
   }, [user]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, syncStatus, syncError, retrySync, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut, deleteAccount }}>
+    <AuthContext.Provider value={{
+      user,
+      loading,
+      isGuest,
+      syncStatus,
+      syncError,
+      retrySync,
+      signInWithGoogle,
+      signInWithEmail,
+      signUpWithEmail,
+      signOut,
+      deleteAccount,
+      continueAsGuest,
+      isLoginModalOpen,
+      openLoginModal,
+      closeLoginModal,
+    }}>
       {children}
     </AuthContext.Provider>
   );

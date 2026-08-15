@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Settings } from 'lucide-react';
+import { Settings, Cloud } from 'lucide-react';
 import { useStore, type TopologyMode, occupiedCells } from '../store';
 import { useAuth } from '../auth';
 import { GlowCard } from './GlowCard';
@@ -172,7 +172,7 @@ const WorkspaceBloom: React.FC<{ items: BloomItem[]; isUrgent?: boolean }> = ({ 
 
 export const Header: React.FC<{ onNewTask: () => void; onDefrag: () => void; onOpenSettings: () => void; onOpenHelp: () => void; onOpenArchive: () => void; onOpenRhythm: () => void }> = ({ onNewTask, onDefrag, onOpenSettings, onOpenHelp, onOpenArchive, onOpenRhythm }) => {
   const { mode, changeTopology, tasks, addToast, gridLayout, selectedTagFilter, setSelectedTagFilter, theme, toggleTheme, soundsEnabled } = useStore();
-  const { user, signOut } = useAuth();
+  const { user, signOut, openLoginModal } = useAuth();
 
   const TOTAL_CELLS = gridLayout === '8x4' ? 32 : gridLayout === '6x5' ? 30 : 24;
 
@@ -409,7 +409,7 @@ export const Header: React.FC<{ onNewTask: () => void; onDefrag: () => void; onO
           ?
         </button>
 
-        {user && (
+        {user ? (
           <div className="flex items-center gap-2 pl-2.5 ml-1 border-l border-line shrink-0">
             <div className="w-7 h-7 rounded-full bg-violet/15 border border-violet/30 grid place-items-center text-violet text-[0.7rem] font-mono font-semibold uppercase shrink-0" title={user.displayName || user.email || undefined}>
               {(user.displayName?.[0] || user.email?.[0] || '?').toUpperCase()}
@@ -428,6 +428,17 @@ export const Header: React.FC<{ onNewTask: () => void; onDefrag: () => void; onO
               </svg>
             </button>
           </div>
+        ) : (
+          <button
+            type="button"
+            onClick={openLoginModal}
+            className="flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-violet/10 hover:bg-violet/20 border border-violet/30 text-violet text-[0.72rem] sm:text-[0.75rem] font-semibold transition-all cursor-pointer shrink-0 shadow-sm"
+            title="Enable continuous cloud sync across devices"
+          >
+            <Cloud size={13} />
+            <span className="hidden sm:inline">Sign In / Sync</span>
+            <span className="sm:hidden">Sync</span>
+          </button>
         )}
       </div>
       </div>
