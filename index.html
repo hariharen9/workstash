@@ -2,18 +2,98 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="apple-touch-icon" href="/favicon.svg" />
-    <link rel="manifest" href="/manifest.webmanifest" />
+    <title>WorkStash — Spatial Task Workspace</title>
+    
+    <!-- Primary Meta Tags -->
+    <meta name="title" content="WorkStash — Spatial Task Workspace" />
+    <meta name="description" content="A spatial task workspace designed around finite cognitive capacity. Shape-shifting Bento blocks, strict capacity ceilings, ambient Ember Pomodoro timers, and local-first data sovereignty. Created by Hariharen." />
+    <meta name="keywords" content="WorkStash, spatial task workspace, bento task manager, finite capacity, pomodoro timer, ember timer, local first productivity, Hariharen, deep work, task management app, PWA" />
+    <meta name="author" content="Hariharen" />
+    <meta name="creator" content="Hariharen" />
+    <meta name="publisher" content="Hariharen" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <link rel="canonical" href="https://work-stash.netlify.app/" />
+
+    <!-- Viewport & PWA Settings -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#070A10" />
+    <meta name="color-scheme" content="dark light" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="WorkStash" />
-    <title>WorkStash — Spatial Task Workspace</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <meta name="application-name" content="WorkStash" />
+
+    <!-- Icons & Manifest -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- Open Graph / Facebook / LinkedIn -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://work-stash.netlify.app/" />
+    <meta property="og:site_name" content="WorkStash" />
+    <meta property="og:title" content="WorkStash — Spatial Task Workspace" />
+    <meta property="og:description" content="A spatial task workspace designed around finite cognitive focus. Shape-shifting Bento blocks, capacity ceilings, and local-first data sovereignty. Built by Hariharen." />
+    <meta property="og:image" content="https://work-stash.netlify.app/banner.svg" />
+    <meta property="og:image:type" content="image/svg+xml" />
+    <meta property="og:image:width" content="1600" />
+    <meta property="og:image:height" content="900" />
+    <meta property="og:image:alt" content="WorkStash — Spatial Task Workspace by Hariharen" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter / X Cards -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://work-stash.netlify.app/" />
+    <meta name="twitter:title" content="WorkStash — Spatial Task Workspace" />
+    <meta name="twitter:description" content="A spatial task workspace designed around finite cognitive focus by Hariharen. Finite Bento grid, Ember Pomodoro engine, and 100% data sovereignty." />
+    <meta name="twitter:image" content="https://work-stash.netlify.app/banner.svg" />
+    <meta name="twitter:image:alt" content="WorkStash — Spatial Task Workspace by Hariharen" />
+    <meta name="twitter:creator" content="@hariharen" />
+
+    <!-- Schema.org Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "WorkStash",
+        "url": "https://work-stash.netlify.app/",
+        "applicationCategory": "ProductivityApplication",
+        "operatingSystem": "Web, iOS, Android, macOS, Windows, Linux",
+        "description": "A spatial task workspace designed around finite cognitive capacity with shape-shifting Bento blocks, strict capacity ceilings, and local-first privacy.",
+        "image": "https://work-stash.netlify.app/banner.svg",
+        "author": {
+          "@type": "Person",
+          "name": "Hariharen",
+          "url": "https://hariharen.site"
+        },
+        "creator": {
+          "@type": "Person",
+          "name": "Hariharen",
+          "url": "https://hariharen.site"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "featureList": [
+          "Shape-Shifting Bento Canvas",
+          "Finite Capacity Ceilings (6x4, 8x4, 6x5, 8x5)",
+          "Ember Pomodoro Engine",
+          "Four Dynamic Board Topologies",
+          "Off-Grid Inbox Dock",
+          "Real-time Workspace Timeline",
+          "Local-First & Offline PWA",
+          "Zero-Runtime Synthesized Web Audio"
+        ]
+      }
+    </script>
+
+    <!-- Typography Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
   </head>
   <body>
     <div id="root"></div>
