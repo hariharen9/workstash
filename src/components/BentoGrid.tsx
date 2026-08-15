@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useStore, occupiedCells, type Task } from '../store';
 import { Tile } from './Tile';
-import { HoldingPenDock } from './HoldingPenDock';
 import { playDrop } from '../sounds';
 import {
   DndContext,
@@ -262,7 +261,6 @@ export const BentoGrid: React.FC<{ onNewTask: () => void }> = ({ onNewTask }) =>
           </DragOverlay>
         </DndContext>
       </div>
-      <HoldingPenDock />
     </div>
   );
 };

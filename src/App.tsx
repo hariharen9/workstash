@@ -13,6 +13,7 @@ import { ActiveTimerWidget } from './components/ActiveTimerWidget';
 import { CommandPalette } from './components/CommandPalette';
 import { MorningIntent } from './components/MorningIntent';
 import { RhythmModal } from './components/RhythmModal';
+import { HoldingPenDock } from './components/HoldingPenDock';
 import { useStore } from './store';
 import { useAuth } from './auth';
 
@@ -162,6 +163,7 @@ function App() {
       />
 
       <ActiveTimerWidget />
+      <HoldingPenDock />
 
       <CommandPalette />
       <MorningIntent />
@@ -175,9 +177,11 @@ const ToastContainer: React.FC = () => {
   const { toasts, removeToast } = useStore();
   
   return (
-    <div className="fixed bottom-6 right-6 z-[60] flex flex-col gap-2">
+    <div className="fixed bottom-20 right-6 z-[60] flex flex-col gap-2 pointer-events-none">
       {toasts.map(t => (
-        <ToastItem key={t.id} toast={t} onRemove={() => removeToast(t.id)} />
+        <div key={t.id} className="pointer-events-auto">
+          <ToastItem toast={t} onRemove={() => removeToast(t.id)} />
+        </div>
       ))}
     </div>
   );
