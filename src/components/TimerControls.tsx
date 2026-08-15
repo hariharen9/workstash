@@ -26,8 +26,7 @@ export const TimerControls: React.FC<TimerControlsProps> = ({ task, compact = fa
   const [isExpanded, setIsExpanded] = useState(false);
   const [customMinutes, setCustomMinutes] = useState(String(Math.round((task.timer?.total ?? 1500) / 60)));
 
-  const timer = task.timer;
-  if (!timer) return null;
+  const timer = task.timer || { total: 1500, remaining: 1500, running: false };
 
   const isRunning = timer.running;
   const isPausedMid = !isRunning && timer.remaining > 0 && timer.remaining < timer.total;
@@ -36,6 +35,11 @@ export const TimerControls: React.FC<TimerControlsProps> = ({ task, compact = fa
 
   const primaryLabel = isRunning ? 'Pause' : isPausedMid ? 'Continue' : isDone ? 'Restart' : 'Start';
   const primaryAction = () => {
+    if (!task.timer) {
+      setTimerDuration(task.id, 1500);
+      setTimerRunning(task.id, true);
+      return;
+    }
     if (isDone) {
       resetTimer(task.id);
       setTimerRunning(task.id, true);

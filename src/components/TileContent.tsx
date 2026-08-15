@@ -406,7 +406,7 @@ export const TileContent: React.FC<{ task: Task; disableTick?: boolean }> = ({ t
               {renderSubtasks({ compact: false, showInput: true })}
             </div>
           )}
-          {task.tab === 'timer' && task.timer && (
+          {task.tab === 'timer' && (
             <div className="flex flex-col justify-center flex-1 min-h-0 tile-scroll">
               <TimerControls task={task} />
             </div>
