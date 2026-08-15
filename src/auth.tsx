@@ -5,9 +5,10 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
+  deleteUser,
   type User,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, type DocumentReference } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc, type DocumentReference } from 'firebase/firestore';
 import { auth, db, googleProvider } from './firebase';
 import {
   useStore,
@@ -28,6 +29,7 @@ interface AuthContextValue {
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -223,8 +225,34 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     await connectSync(user.uid, true);
   }, [user]);
 
+  const deleteAccount = useCallback(async () => {
+    disconnectSync();
+    const currentUser = user || auth.currentUser;
+    if (currentUser) {
+      try {
+        const workspaceRef = doc(db, 'users', currentUser.uid, 'workspace', 'main');
+        await deleteDoc(workspaceRef);
+      } catch (err) {
+        console.warn('Could not delete firestore workspace doc during account deletion:', err);
+      }
+      try {
+        await deleteUser(currentUser);
+      } catch (authErr) {
+        console.warn('Could not delete auth user directly; signing out:', authErr);
+        await firebaseSignOut(auth);
+      }
+    }
+    try {
+      localStorage.removeItem('workstash-v1');
+    } catch {
+      // ignore
+    }
+    useStore.getState().resetWorkspace();
+    setUser(null);
+  }, [user]);
+
   return (
-    <AuthContext.Provider value={{ user, loading, syncStatus, syncError, retrySync, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut }}>
+    <AuthContext.Provider value={{ user, loading, syncStatus, syncError, retrySync, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut, deleteAccount }}>
       {children}
     </AuthContext.Provider>
   );

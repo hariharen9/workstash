@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useStore, occupiedCells, type GridLayout, type PersistedWorkspace } from '../store';
+import { useAuth } from '../auth';
 import { GlowCard } from './GlowCard';
 import {
   playClick,
@@ -29,6 +30,10 @@ import {
   Play,
   Info,
   X,
+  AlertTriangle,
+  Loader2,
+  RotateCcw,
+  CheckCircle2,
 } from 'lucide-react';
 
 type SettingsTab = 'appearance' | 'grid' | 'focus' | 'data';
@@ -49,11 +54,17 @@ export const SettingsModal: React.FC<{ isOpen: boolean; onClose: () => void }> =
     addToast,
   } = useStore();
 
+  const { user, deleteAccount } = useAuth();
+
   const [activeTab, setActiveTab] = useState<SettingsTab>('appearance');
   const [localLayout, setLocalLayout] = useState<GridLayout>(gridLayout);
   const [confirmReset, setConfirmReset] = useState(false);
   const [testedSound, setTestedSound] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 3-Step Account Deletion State
+  const [deleteStep, setDeleteStep] = useState<1 | 2 | 3>(1);
+  const [deleteChallengeInput, setDeleteChallengeInput] = useState('');
 
   const TOTAL_CELLS = localLayout === '8x4' ? 32 : localLayout === '6x5' ? 30 : 24;
   const used = occupiedCells(tasks);
@@ -64,10 +75,14 @@ export const SettingsModal: React.FC<{ isOpen: boolean; onClose: () => void }> =
   const archiveCount = tasks.filter(t => t.archived).length;
   const recurringCount = tasks.filter(t => t.recurrence).length;
 
+  const targetChallenge = user?.email || 'DELETE MY ACCOUNT';
+
   useEffect(() => {
     if (isOpen) {
       setLocalLayout(gridLayout);
       setConfirmReset(false);
+      setDeleteStep(1);
+      setDeleteChallengeInput('');
       const handleKeyDown = (e: KeyboardEvent) => {
         if (e.key === 'Escape') onClose();
         if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
@@ -100,6 +115,26 @@ export const SettingsModal: React.FC<{ isOpen: boolean; onClose: () => void }> =
     if (soundsEnabled) playArchive();
     addToast('Workspace reset to defaults', '↺');
     onClose();
+  };
+
+  const handleExecuteAccountDeletion = async () => {
+    if (deleteChallengeInput.trim().toLowerCase() !== targetChallenge.trim().toLowerCase()) {
+      addToast('Confirmation text does not match', '⚠');
+      if (soundsEnabled) playError();
+      return;
+    }
+    setDeleteStep(3);
+    try {
+      await deleteAccount();
+      if (soundsEnabled) playArchive();
+      addToast('Account and all cloud data permanently deleted', '✓');
+      onClose();
+    } catch (err) {
+      console.error('Account deletion error:', err);
+      setDeleteStep(2);
+      if (soundsEnabled) playError();
+      addToast('Deletion encountered an issue; please try signing in again first', '⚠');
+    }
   };
 
   const testAudio = (name: string, fn: () => void) => {
@@ -511,7 +546,7 @@ export const SettingsModal: React.FC<{ isOpen: boolean; onClose: () => void }> =
             </div>
           )}
 
-          {/* ─── TAB 4: DATA & BACKUP ─── */}
+          {/* ─── TAB 4: DATA & DANGER ZONE ─── */}
           {activeTab === 'data' && (
             <div className="flex flex-col gap-5">
               {/* Live Workspace Metrics */}
@@ -570,26 +605,146 @@ export const SettingsModal: React.FC<{ isOpen: boolean; onClose: () => void }> =
                 </div>
               </div>
 
-              {/* Danger Zone: Workspace Reset */}
-              <div className="flex flex-col gap-2.5 p-4 rounded-2xl bg-danger/10 border border-danger/30">
-                <div className="flex items-center gap-2 text-danger">
-                  <Trash2 size={15} />
-                  <span className="text-xs font-mono font-semibold tracking-wide uppercase">Danger Zone</span>
+              {/* Reset to Default Starter Tasks (Optional non-destructive) */}
+              <div className="flex items-center justify-between gap-3 p-4 rounded-2xl bg-elevated/50 border border-line">
+                <div>
+                  <span className="text-xs font-semibold text-text block">Restore Starter Workspace</span>
+                  <span className="text-[0.72rem] text-muted block mt-0.5">
+                    Resets your grid layout to the default starter tasks without deleting your account credentials
+                  </span>
                 </div>
-                <p className="text-xs text-muted m-0">
-                  Restores default starter tasks and clears all focus session analytics.
-                </p>
                 <button
                   type="button"
                   onClick={handleReset}
-                  className={`w-full py-2.5 rounded-xl border text-xs font-bold cursor-pointer transition-all ${
+                  className={`shrink-0 px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer flex items-center gap-1.5 ${
                     confirmReset
-                      ? 'bg-danger text-void border-danger shadow-md animate-pulse'
-                      : 'bg-danger/15 hover:bg-danger/25 border-danger/40 text-danger'
+                      ? 'bg-amber text-void border-amber font-bold animate-pulse'
+                      : 'bg-elevated hover:bg-elevated-hi border-line text-muted hover:text-text'
                   }`}
                 >
-                  {confirmReset ? '⚠ Click again to confirm irreversible reset' : 'Reset Workspace to Factory Starter'}
+                  <RotateCcw size={13} />
+                  <span>{confirmReset ? 'Confirm Starter Reset' : 'Reset Grid'}</span>
                 </button>
+              </div>
+
+              {/* ─── DANGER ZONE: 3-STEP ACCOUNT DELETION ─── */}
+              <div className="flex flex-col gap-4 p-5 rounded-2xl bg-danger/10 border border-danger/30">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-danger">
+                    <AlertTriangle size={17} />
+                    <span className="text-xs font-mono font-bold tracking-wider uppercase">
+                      Danger Zone: Account Deletion
+                    </span>
+                  </div>
+                  <span className="text-[0.7rem] font-mono font-bold px-2 py-0.5 rounded-full bg-danger/20 text-danger border border-danger/40">
+                    Step {deleteStep} of 3
+                  </span>
+                </div>
+
+                {/* STEP 1: Impact Warning */}
+                {deleteStep === 1 && (
+                  <div className="flex flex-col gap-3">
+                    <p className="text-xs text-text m-0 leading-relaxed">
+                      Permanently destroys your cloud workspace, user account credentials, offline snapshots, and focus history. <strong>This action cannot be undone.</strong>
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[0.72rem] text-muted bg-void/40 p-3 rounded-xl border border-danger/20">
+                      <div className="flex items-center gap-1.5 text-danger/90">
+                        <span>✕</span> Cloud Firestore workspace
+                      </div>
+                      <div className="flex items-center gap-1.5 text-danger/90">
+                        <span>✕</span> Authentication profile
+                      </div>
+                      <div className="flex items-center gap-1.5 text-danger/90">
+                        <span>✕</span> Focus session history
+                      </div>
+                      <div className="flex items-center gap-1.5 text-danger/90">
+                        <span>✕</span> Device local storage cache
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDeleteStep(2);
+                        if (soundsEnabled) playError();
+                      }}
+                      className="w-full py-2.5 px-4 rounded-xl border border-danger/50 bg-danger/15 hover:bg-danger/25 text-danger text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-2"
+                    >
+                      <Trash2 size={14} />
+                      <span>Initiate 3-Step Account Deletion →</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* STEP 2: Challenge Verification */}
+                {deleteStep === 2 && (
+                  <div className="flex flex-col gap-3 animate-tileIn">
+                    <p className="text-xs text-text m-0 leading-relaxed">
+                      To confirm absolute intent, please type your email address <strong className="text-danger select-all font-mono">{targetChallenge}</strong> into the confirmation box below:
+                    </p>
+                    <div className="flex flex-col gap-1">
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={deleteChallengeInput}
+                          onChange={(e) => setDeleteChallengeInput(e.target.value)}
+                          placeholder={`Type "${targetChallenge}" to confirm`}
+                          className={`tile-field !py-2.5 !text-xs !font-mono w-full ${
+                            deleteChallengeInput.trim().toLowerCase() === targetChallenge.trim().toLowerCase()
+                              ? '!border-teal !bg-teal/10'
+                              : '!border-danger/60'
+                          }`}
+                          autoFocus
+                        />
+                        {deleteChallengeInput.trim().toLowerCase() === targetChallenge.trim().toLowerCase() && (
+                          <CheckCircle2 size={16} className="text-teal absolute right-3 top-1/2 -translate-y-1/2" />
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDeleteStep(1);
+                          setDeleteChallengeInput('');
+                          if (soundsEnabled) playClick();
+                        }}
+                        className="py-2.5 px-4 rounded-xl border border-line bg-elevated hover:bg-elevated-hi text-muted hover:text-text text-xs font-semibold transition-colors cursor-pointer"
+                      >
+                        Cancel & Abort
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={deleteChallengeInput.trim().toLowerCase() !== targetChallenge.trim().toLowerCase()}
+                        onClick={handleExecuteAccountDeletion}
+                        className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                          deleteChallengeInput.trim().toLowerCase() === targetChallenge.trim().toLowerCase()
+                            ? 'bg-danger text-white hover:bg-danger/90 shadow-lg cursor-pointer animate-pulse'
+                            : 'bg-danger/20 text-danger/50 border border-danger/20 cursor-not-allowed opacity-60'
+                        }`}
+                      >
+                        <Trash2 size={14} />
+                        <span>Permanently Delete Account & Wipe All Data</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 3: Execution Loading State */}
+                {deleteStep === 3 && (
+                  <div className="flex flex-col items-center justify-center py-6 gap-3 text-center animate-tileIn">
+                    <Loader2 size={28} className="text-danger animate-spin" />
+                    <div>
+                      <span className="text-xs font-bold text-text block">
+                        Deleting account and purging cloud data...
+                      </span>
+                      <span className="text-[0.72rem] text-muted block mt-0.5 font-mono">
+                        Cleaning Firestore documents, auth credentials, and local storage caches.
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

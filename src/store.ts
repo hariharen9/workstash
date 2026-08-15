@@ -451,27 +451,17 @@ function createSeedTasks(): Task[] {
 }
 
 export function buildEmptyWorkspace(): PersistedWorkspace {
-  const pen: Task = {
-    id: uid(),
-    title: 'Holding Pen',
-    cat: 'pen',
-    w: 2,
-    h: 1,
-    naturalW: 2,
-    naturalH: 1,
-    isPen: true,
-    items: [],
-    completed: false,
-  };
+  const seed = createSeedTasks();
+  const { tasks, newFocusedId } = applyTopology(seed, 'normal', null, '6x4');
   return {
     mode: 'normal',
-    focusedTaskId: null,
-    tasks: [pen],
+    focusedTaskId: newFocusedId,
+    tasks,
     activityLogs: [
       {
         id: uid(),
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        msg: 'Workspace created',
+        msg: 'Welcome to WorkStash — starter spatial workspace initialized',
         type: 'system',
       },
     ],
