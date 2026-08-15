@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Lenis from '@studio-freight/lenis';
+import { X, CheckCircle2, AlertTriangle, Sparkles, Clock, ArrowUpRight, RotateCcw, Package } from 'lucide-react';
 import { Header } from './components/Header';
 import { BentoGrid } from './components/BentoGrid';
 import { FocusShutter } from './components/FocusShutter';
@@ -187,7 +188,7 @@ const ToastContainer: React.FC = () => {
   const { toasts, removeToast } = useStore();
   
   return (
-    <div className="fixed bottom-20 right-6 z-[60] flex flex-col gap-2 pointer-events-none">
+    <div className="fixed bottom-6 sm:bottom-8 right-4 sm:right-6 z-[999] flex flex-col gap-2.5 pointer-events-none max-w-[calc(100vw-2rem)]">
       {toasts.map(t => (
         <div key={t.id} className="pointer-events-auto">
           <ToastItem toast={t} onRemove={() => removeToast(t.id)} />
@@ -197,25 +198,109 @@ const ToastContainer: React.FC = () => {
   );
 };
 
-const ToastItem: React.FC<{ toast: { id: string, msg: string, icon: string }, onRemove: () => void }> = ({ toast, onRemove }) => {
-  const [isRemoving, setIsRemoving] = React.useState(false);
+const ToastItem: React.FC<{ toast: { id: string; msg: string; icon: string }; onRemove: () => void }> = ({ toast, onRemove }) => {
+  const [isRemoving, setIsRemoving] = useState(false);
 
-  React.useEffect(() => {
-    const t = setTimeout(() => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
       setIsRemoving(true);
-      setTimeout(() => onRemove(), 400); // Wait for transition
-    }, 3200);
-    return () => clearTimeout(t);
+      setTimeout(() => onRemove(), 180);
+    }, 2200);
+    return () => clearTimeout(timer);
   }, [onRemove]);
+
+  const handleDismiss = () => {
+    setIsRemoving(true);
+    setTimeout(() => onRemove(), 180);
+  };
+
+  const getBadgeMeta = (icon: string) => {
+    if (icon === '⚠' || icon === '✕' || icon === '!') {
+      return {
+        iconComponent: <AlertTriangle size={14} />,
+        bg: 'bg-amber-dim text-amber border-amber/30',
+        ring: 'shadow-[0_0_12px_rgba(245,166,35,0.2)]',
+      };
+    }
+    if (icon === '✓' || icon === '✔') {
+      return {
+        iconComponent: <CheckCircle2 size={14} />,
+        bg: 'bg-teal-dim text-teal border-teal/30',
+        ring: 'shadow-[0_0_12px_rgba(94,234,212,0.2)]',
+      };
+    }
+    if (icon === '⟳' || icon === '↺' || icon === '↩') {
+      return {
+        iconComponent: <RotateCcw size={13} />,
+        bg: 'bg-violet-dim text-violet border-violet/30',
+        ring: 'shadow-[0_0_12px_rgba(139,124,246,0.2)]',
+      };
+    }
+    if (icon === '⚡' || icon === '✨') {
+      return {
+        iconComponent: <Sparkles size={13} />,
+        bg: 'bg-violet-dim text-violet border-violet/30',
+        ring: 'shadow-[0_0_12px_rgba(139,124,246,0.2)]',
+      };
+    }
+    if (icon === '⏰' || icon === '⏳' || icon === '⏱') {
+      return {
+        iconComponent: <Clock size={13} />,
+        bg: 'bg-violet-dim text-violet border-violet/30',
+        ring: 'shadow-[0_0_12px_rgba(139,124,246,0.2)]',
+      };
+    }
+    if (icon === '📦') {
+      return {
+        iconComponent: <Package size={13} />,
+        bg: 'bg-amber-dim text-amber border-amber/30',
+        ring: 'shadow-[0_0_12px_rgba(245,166,35,0.2)]',
+      };
+    }
+    if (icon === '↗') {
+      return {
+        iconComponent: <ArrowUpRight size={14} />,
+        bg: 'bg-teal-dim text-teal border-teal/30',
+        ring: 'shadow-[0_0_12px_rgba(94,234,212,0.2)]',
+      };
+    }
+    return {
+      iconComponent: <span className="text-[0.8rem]">{icon}</span>,
+      bg: 'bg-elevated text-text border-line',
+      ring: '',
+    };
+  };
+
+  const badge = getBadgeMeta(toast.icon);
 
   return (
     <div 
-      className={`bg-elevated-hi/95 border border-line px-4 py-3 rounded-xl text-[0.8125rem] font-medium max-w-[340px] animate-toastIn shadow-toast flex items-center gap-2.5 backdrop-blur-sm ${
-        isRemoving ? 'opacity-0 translate-y-2 transition-[opacity,transform] duration-400' : ''
+      className={`group/toast relative overflow-hidden bg-surface/95 backdrop-blur-xl border border-line/80 dark:border-white/10 px-3.5 py-2.5 rounded-2xl text-[0.8125rem] font-medium max-w-[360px] min-w-[240px] shadow-[0_12px_32px_-6px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.06)] flex items-center gap-3 transition-all duration-180 ease-out select-none animate-toastIn ${
+        isRemoving ? 'opacity-0 translate-y-3 scale-95' : 'opacity-100 translate-y-0 scale-100'
       }`}
     >
-      <span className="text-[0.9rem] shrink-0">{toast.icon}</span>
-      <span className="leading-snug text-text">{toast.msg}</span>
+      {/* Icon Badge */}
+      <div className={`w-7 h-7 rounded-xl border flex items-center justify-center shrink-0 ${badge.bg} ${badge.ring}`}>
+        {badge.iconComponent}
+      </div>
+
+      {/* Message */}
+      <span className="leading-snug text-text font-medium flex-1 min-w-0 pr-1">
+        {toast.msg}
+      </span>
+
+      {/* Quick Dismiss Button on hover */}
+      <button
+        type="button"
+        onClick={handleDismiss}
+        className="w-5 h-5 rounded-lg text-faint hover:text-text hover:bg-elevated flex items-center justify-center shrink-0 cursor-pointer transition-colors border-none p-0"
+        title="Dismiss"
+      >
+        <X size={12} />
+      </button>
+
+      {/* Subtle bottom progress bar */}
+      <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-violet via-teal to-violet origin-left animate-[toastProgress_2.2s_linear_forwards] opacity-60 pointer-events-none" />
     </div>
   );
 };
