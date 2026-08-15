@@ -104,10 +104,8 @@ const TIMER_PRESETS = [
   { label: '60m', seconds: 3600 },
 ];
 
-const DEFAULT_POPULAR_TAGS = ['#frontend', '#backend', '#design', '#bug', '#infra', '#ops', '#sprint'];
-
 export const NewTaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
-  const { addTile, addRecurringTile, tasks, addToast, gridLayout, soundsEnabled } = useStore();
+  const { addTile, addRecurringTile, tasks, addToast, gridLayout, soundsEnabled, userTags = [], rememberTag, forgetTag } = useStore();
   const TOTAL_CELLS = gridLayout === '8x4' ? 32 : gridLayout === '6x5' ? 30 : 24;
 
   const [activeTab, setActiveTab] = useState<'standard' | 'recurring'>('standard');
@@ -130,7 +128,7 @@ export const NewTaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
   const tagInputRef = useRef<HTMLInputElement>(null);
 
   const existingWorkspaceTags = getAllTags(tasks);
-  const availableSuggestions = Array.from(new Set([...existingWorkspaceTags, ...DEFAULT_POPULAR_TAGS]));
+  const availableSuggestions = Array.from(new Set([...userTags, ...existingWorkspaceTags]));
 
   const usedCells = occupiedCells(tasks);
   const currentCategoryMeta = CATEGORIES.find(c => c.id === cat) || CATEGORIES[0];
@@ -196,11 +194,13 @@ export const NewTaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
     setSubtasks(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleAddTag = (rawTag: string) => {
-    const formatted = formatTag(rawTag);
-    if (formatted && !tags.includes(formatted)) {
+  const handleAddTag = (raw: string) => {
+    const formatted = formatTag(raw);
+    if (!formatted) return;
+    if (!tags.includes(formatted)) {
       setTags(prev => [...prev, formatted]);
     }
+    rememberTag(formatted);
     setTagInput('');
   };
 
@@ -211,6 +211,7 @@ export const NewTaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
       setTags(prev => prev.filter(t => t !== formatted));
     } else {
       setTags(prev => [...prev, formatted]);
+      rememberTag(formatted);
     }
   };
 
@@ -429,29 +430,47 @@ export const NewTaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
                 </div>
               )}
 
-              {/* Suggestion Chips */}
-              <div className="flex flex-col gap-1 pt-1">
-                <span className="text-[0.65rem] text-faint font-medium">Quick suggestions:</span>
-                <div className="flex gap-1.5 flex-wrap max-w-full">
-                  {availableSuggestions.map(suggestion => {
-                    const isSelected = tags.includes(suggestion);
-                    return (
-                      <button
-                        key={suggestion}
-                        type="button"
-                        className={`text-[0.68rem] font-mono px-2 py-0.5 rounded-md border transition-all cursor-pointer ${
-                          isSelected
-                            ? 'bg-violet text-void border-violet/50 shadow-sm font-semibold'
-                            : 'bg-elevated/80 border-line/60 text-muted hover:text-text hover:border-faint'
-                        }`}
-                        onClick={() => handleToggleTag(suggestion)}
-                      >
-                        {suggestion}
-                      </button>
-                    );
-                  })}
+              {/* Saved / Recent Tags */}
+              {availableSuggestions.length > 0 ? (
+                <div className="flex flex-col gap-1 pt-1">
+                  <span className="text-[0.65rem] text-faint font-medium">Your saved tags (click to add):</span>
+                  <div className="flex gap-1.5 flex-wrap max-w-full">
+                    {availableSuggestions.map(suggestion => {
+                      const isSelected = tags.includes(suggestion);
+                      return (
+                        <button
+                          key={suggestion}
+                          type="button"
+                          className={`group text-[0.68rem] font-mono px-2 py-0.5 rounded-md border transition-all cursor-pointer flex items-center gap-1 ${
+                            isSelected
+                              ? 'bg-violet text-void border-violet/50 shadow-sm font-semibold'
+                              : 'bg-elevated/80 border-line/60 text-muted hover:text-text hover:border-faint'
+                          }`}
+                          onClick={() => handleToggleTag(suggestion)}
+                        >
+                          <span>{suggestion}</span>
+                          <span
+                            role="button"
+                            className="opacity-0 group-hover:opacity-100 hover:text-danger text-[0.65rem] ml-0.5 transition-opacity"
+                            title="Remove from saved tags"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              forgetTag(suggestion);
+                              handleRemoveTag(suggestion);
+                            }}
+                          >
+                            ×
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <p className="text-[0.68rem] text-faint m-0 pt-0.5 italic">
+                  No saved tags yet. Any tag you type above will be remembered for 1-click reuse.
+                </p>
+              )}
             </div>
 
             {/* Category Selector Cards */}

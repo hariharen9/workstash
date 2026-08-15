@@ -3,7 +3,7 @@ import { useStore } from '../store';
 import { TileContent } from './TileContent';
 
 export const FocusShutter: React.FC = () => {
-  const { shutterOpen, closeShutter, tasks, isHoveringTask, updateTitle, archiveTask, addToast, setEnergy, addTag, removeTag } = useStore();
+  const { shutterOpen, closeShutter, tasks, isHoveringTask, updateTitle, archiveTask, addToast, setEnergy, addTag, removeTag, userTags = [] } = useStore();
 
   const task = tasks.find(t => t.id === shutterOpen);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -130,27 +130,44 @@ export const FocusShutter: React.FC = () => {
                 </span>
               ))}
               {isAddingTag ? (
-                <input
-                  type="text"
-                  className="tile-field !py-0.5 !px-2 !text-[0.72rem] !w-28 font-mono"
-                  placeholder="#tag..."
-                  autoFocus
-                  value={newTagVal}
-                  onChange={e => setNewTagVal(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') {
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <input
+                    type="text"
+                    className="tile-field !py-0.5 !px-2 !text-[0.72rem] !w-28 font-mono"
+                    placeholder="#tag..."
+                    autoFocus
+                    value={newTagVal}
+                    onChange={e => setNewTagVal(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        if (newTagVal.trim()) addTag(task.id, newTagVal.trim());
+                        setNewTagVal('');
+                        setIsAddingTag(false);
+                      }
+                      if (e.key === 'Escape') setIsAddingTag(false);
+                    }}
+                    onBlur={() => {
                       if (newTagVal.trim()) addTag(task.id, newTagVal.trim());
                       setNewTagVal('');
                       setIsAddingTag(false);
-                    }
-                    if (e.key === 'Escape') setIsAddingTag(false);
-                  }}
-                  onBlur={() => {
-                    if (newTagVal.trim()) addTag(task.id, newTagVal.trim());
-                    setNewTagVal('');
-                    setIsAddingTag(false);
-                  }}
-                />
+                    }}
+                  />
+                  {userTags.filter(t => !(task.tags || []).includes(t)).map(t => (
+                    <button
+                      key={t}
+                      type="button"
+                      className="text-[0.65rem] font-mono text-violet hover:bg-violet-dim bg-elevated/70 border border-violet/30 rounded px-1.5 py-0.5 cursor-pointer"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        addTag(task.id, t);
+                        setNewTagVal('');
+                        setIsAddingTag(false);
+                      }}
+                    >
+                      +{t}
+                    </button>
+                  ))}
+                </div>
               ) : (
                 <button
                   type="button"

@@ -85,6 +85,7 @@ export interface PersistedWorkspace {
   mode: TopologyMode;
   focusedTaskId: string | null;
   tasks: Task[];
+  userTags?: string[];
   activityLogs: ActivityLog[];
   focusSessions: FocusSession[];
   gridLayout: GridLayout;
@@ -130,6 +131,10 @@ interface AppState {
 
   setGridLayout: (layout: GridLayout) => void;
   logActivity: (msg: string, type: ActivityLog['type']) => void;
+
+  userTags: string[];
+  rememberTag: (tag: string) => void;
+  forgetTag: (tag: string) => void;
 
   addTile: (title: string, cat: TaskCategory, w?: number, h?: number, options?: { notes?: string; subtasks?: string[]; timerSeconds?: number; energy?: number; tags?: string[] }) => void;
   addRecurringTile: (title: string, cat: TaskCategory, w?: number, h?: number, recurrence?: Recurrence, options?: { notes?: string; subtasks?: string[]; timerSeconds?: number; energy?: number; tags?: string[] }) => void;
@@ -429,29 +434,29 @@ function createSeedTasks(): Task[] {
       notes: '// reconcile elevated vs elevated-hi\n// check contrast on amber badges', subtasks: [
         { id: uid(), text: 'Pull palette into CSS vars', done: true },
         { id: uid(), text: 'Recheck focus ring contrast', done: false },
-      ], tags: ['#design', '#core'], timer: { total: 1500, remaining: 1500, running: false }, energy: 3, completed: false, tab: 'notes' },
+      ], tags: [], timer: { total: 1500, remaining: 1500, running: false }, energy: 3, completed: false, tab: 'notes' },
     // 2×2 — tabbed urgent workspace
     { id: uid(), title: 'Prod error spike — /checkout 500s', cat: 'fire', w: 2, h: 2, naturalW: 2, naturalH: 2,
       notes: 'TypeError: Cannot read properties of undefined\n  at validateCart (checkout.ts:88)', subtasks: [
         { id: uid(), text: 'Reproduce locally', done: false },
         { id: uid(), text: 'Check deploy logs', done: false },
-      ], tags: ['#bug', '#prod'], timer: { total: 900, remaining: 900, running: false }, energy: 4, completed: false, tab: 'notes' },
+      ], tags: [], timer: { total: 900, remaining: 900, running: false }, energy: 4, completed: false, tab: 'notes' },
     // 3×1 — slim wide checklist strip
     { id: uid(), title: 'Sprint planning prep', cat: 'focus', w: 3, h: 1, naturalW: 3, naturalH: 1,
       notes: '', subtasks: [
         { id: uid(), text: 'Review backlog items', done: false },
         { id: uid(), text: 'Estimate story points', done: false },
         { id: uid(), text: 'Draft sprint goal', done: false },
-      ], tags: ['#planning'], energy: 2, completed: false },
+      ], tags: [], energy: 2, completed: false },
     // 1×2 — tall narrow column
     { id: uid(), title: 'Review PR #482', cat: 'focus', w: 1, h: 2, naturalW: 1, naturalH: 2,
       notes: '', subtasks: [
         { id: uid(), text: 'Check migration rollback', done: false },
         { id: uid(), text: 'Test edge cases', done: false },
-      ], tags: ['#code-review'], energy: 2, completed: false },
-    { id: uid(), title: 'Approve expense report', cat: 'admin', w: 1, h: 1, naturalW: 1, naturalH: 1, tags: ['#finance'], completed: false },
-    { id: uid(), title: 'Reply: vendor contract q\'s', cat: 'admin', w: 1, h: 1, naturalW: 1, naturalH: 1, tags: ['#ops'], completed: false },
-    { id: uid(), title: 'Book flight for offsite', cat: 'admin', w: 1, h: 1, naturalW: 1, naturalH: 1, tags: ['#travel'], completed: false },
+      ], tags: [], energy: 2, completed: false },
+    { id: uid(), title: 'Approve expense report', cat: 'admin', w: 1, h: 1, naturalW: 1, naturalH: 1, tags: [], completed: false },
+    { id: uid(), title: 'Reply: vendor contract q\'s', cat: 'admin', w: 1, h: 1, naturalW: 1, naturalH: 1, tags: [], completed: false },
+    { id: uid(), title: 'Book flight for offsite', cat: 'admin', w: 1, h: 1, naturalW: 1, naturalH: 1, tags: [], completed: false },
     { id: uid(), title: 'Holding Pen', cat: 'pen', w: 2, h: 1, naturalW: 2, naturalH: 1, isPen: true, items: ['Slack: check w/ Dana re: staging creds'], completed: false },
   ];
 }
@@ -483,6 +488,7 @@ export function serializeWorkspaceState(state: {
   mode: TopologyMode;
   focusedTaskId: string | null;
   tasks: Task[];
+  userTags?: string[];
   activityLogs: ActivityLog[];
   focusSessions: FocusSession[];
   gridLayout: GridLayout;
@@ -497,6 +503,7 @@ export function serializeWorkspaceState(state: {
         ? { ...t, timer: { ...t.timer, running: false } }
         : t
     ),
+    userTags: state.userTags || [],
     activityLogs: (state.activityLogs || []).slice(0, 100),
     focusSessions: (state.focusSessions || []).slice(0, 500),
     gridLayout: state.gridLayout || '6x4',
@@ -512,6 +519,7 @@ function buildInitialState() {
     mode: 'normal' as TopologyMode,
     focusedTaskId: newFocusedId,
     tasks,
+    userTags: [] as string[],
     selectedTagFilter: null as string | null,
     shutterOpen: null as string | null,
     toasts: [] as Toast[],
@@ -538,6 +546,22 @@ export const useStore = create<AppState>()(
   persist(
     (set, get) => ({
       ...initial,
+
+      rememberTag: (rawTag: string) => {
+        const tag = formatTag(rawTag);
+        if (!tag) return;
+        set((s) => ({
+          userTags: Array.from(new Set([...(s.userTags || []), tag]))
+        }));
+      },
+
+      forgetTag: (rawTag: string) => {
+        const tag = formatTag(rawTag);
+        if (!tag) return;
+        set((s) => ({
+          userTags: (s.userTags || []).filter(t => t !== tag)
+        }));
+      },
 
       pushSnapshot: () => {
         const state = get();
@@ -651,6 +675,7 @@ export const useStore = create<AppState>()(
           done: false
         }));
         const initialTags = Array.from(new Set((options?.tags || []).map(formatTag).filter(Boolean)));
+        initialTags.forEach(t => get().rememberTag(t));
         const newTask: Task = {
           id: uid(), title, cat, w, h, naturalW: w, naturalH: h,
           notes: options?.notes ?? '',
@@ -675,6 +700,7 @@ export const useStore = create<AppState>()(
           done: false
         }));
         const initialTags = Array.from(new Set((options?.tags || []).map(formatTag).filter(Boolean)));
+        initialTags.forEach(t => get().rememberTag(t));
         const newTask: Task = {
           id: uid(), title, cat, w, h, naturalW: w, naturalH: h,
           notes: options?.notes ?? '',
@@ -698,6 +724,7 @@ export const useStore = create<AppState>()(
       addTag: (id, rawTag) => {
         const tag = formatTag(rawTag);
         if (!tag) return;
+        get().rememberTag(tag);
         const task = get().tasks.find(t => t.id === id);
         if (!task) return;
         if (task.tags && task.tags.includes(tag)) return;
@@ -728,6 +755,7 @@ export const useStore = create<AppState>()(
 
       updateTaskTags: (id, tags) => {
         const formatted = Array.from(new Set(tags.map(formatTag).filter(Boolean)));
+        formatted.forEach(t => get().rememberTag(t));
         get().pushSnapshot();
         set((state) => ({
           tasks: state.tasks.map(t => t.id === id ? {
