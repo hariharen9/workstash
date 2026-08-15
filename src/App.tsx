@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import Lenis from '@studio-freight/lenis';
 import { X, CheckCircle2, AlertTriangle, Sparkles, Clock, ArrowUpRight, RotateCcw, Package } from 'lucide-react';
 import { Header } from './components/Header';
 import { BentoGrid } from './components/BentoGrid';
@@ -30,28 +29,6 @@ function App() {
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const { undo, redo, undoStack, redoStack } = useStore();
   const { syncStatus, syncError, retrySync } = useAuth();
-
-  useEffect(() => {
-    const lenis = new Lenis({
-      duration: 0.9,
-      easing: (t) => t === 1 ? 1 : 1 - Math.pow(2, -10 * t), // expo out — fast start, soft stop
-      orientation: 'vertical',
-      gestureOrientation: 'vertical',
-      smoothWheel: true,
-      wheelMultiplier: 0.9,
-      touchMultiplier: 1.5,
-    });
-
-    function raf(time: number) {
-      lenis.raf(time);
-      requestAnimationFrame(raf);
-    }
-    requestAnimationFrame(raf);
-
-    return () => {
-      lenis.destroy();
-    };
-  }, []);
 
   // Undo/redo keyboard shortcuts
   useEffect(() => {

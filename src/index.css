@@ -92,8 +92,9 @@
 }
 
 @layer base {
-  /* ─── Theme transition ─────────────────────────────────────────── */
+  /* ─── Native Hardware-Accelerated Smooth Scroll ────────────────── */
   html {
+    scroll-behavior: smooth;
     transition: background-color 0.35s ease, color 0.35s ease;
   }
 

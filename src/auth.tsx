@@ -144,9 +144,14 @@ async function connectSync(uid: string, isRetry = false) {
       await setDoc(workspaceRef, cleanForFirestore(local));
       cloudLoaded = true;
     } else {
-      const empty = buildEmptyWorkspace();
-      useStore.getState().hydrateCloudWorkspace(empty);
-      await setDoc(workspaceRef, cleanForFirestore(empty));
+      const local = getLocalWorkspace();
+      const payload = local && local.tasks && local.tasks.length > 0 ? local : buildEmptyWorkspace();
+      useStore.getState().hydrateCloudWorkspace(payload);
+      try {
+        await setDoc(workspaceRef, cleanForFirestore(payload));
+      } catch (writeErr) {
+        console.warn('Initial workspace upload failed; changes remain safely local:', writeErr);
+      }
       cloudLoaded = true;
     }
     statusReporter('synced', '');
@@ -214,8 +219,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setLoading(true);
       setSyncStatus('loading');
       setSyncError('');
-      await connectSync(firebaseUser.uid);
-      setLoading(false);
+      try {
+        await connectSync(firebaseUser.uid);
+      } catch (err) {
+        console.error('Unhandled connectSync error in onAuthStateChanged:', err);
+      } finally {
+        setLoading(false);
+      }
     });
 
     return () => {
