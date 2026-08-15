@@ -110,6 +110,12 @@ interface AppState {
   soundsEnabled: boolean;
   toggleSounds: () => void;
 
+  hasCompletedTour: boolean;
+  onboardingTourActive: boolean;
+  startOnboardingTour: () => void;
+  completeOnboardingTour: () => void;
+  dismissOnboardingTour: () => void;
+
   morningIntentDate: string | null;
   setMorningIntentShown: () => void;
 
@@ -512,6 +518,8 @@ function buildInitialState() {
     gridLayout: '6x4' as GridLayout,
     theme: 'dark' as 'dark' | 'light',
     soundsEnabled: true,
+    hasCompletedTour: false,
+    onboardingTourActive: false,
     morningIntentDate: null,
     undoStack: [] as Snapshot[],
     redoStack: [] as Snapshot[],
@@ -1227,6 +1235,10 @@ export const useStore = create<AppState>()(
         get().addToast('Workspace reset to defaults', '⟳');
       },
 
+      startOnboardingTour: () => set({ onboardingTourActive: true }),
+      completeOnboardingTour: () => set({ onboardingTourActive: false, hasCompletedTour: true }),
+      dismissOnboardingTour: () => set({ onboardingTourActive: false }),
+
       hydrateCloudWorkspace: (workspace) => {
         const tasks = (workspace.tasks || []).map(t => ({
           ...t,
@@ -1266,6 +1278,7 @@ export const useStore = create<AppState>()(
         }),
         theme: state.theme,
         soundsEnabled: state.soundsEnabled,
+        hasCompletedTour: state.hasCompletedTour,
       }),
       merge: (persisted, current) => {
         const p = persisted as Partial<AppState> | undefined;
@@ -1291,6 +1304,8 @@ export const useStore = create<AppState>()(
           activityLogs: Array.isArray(p.activityLogs) ? p.activityLogs : current.activityLogs,
           theme: (p as { theme?: string }).theme === 'light' ? 'light' : 'dark',
           soundsEnabled: typeof (p as { soundsEnabled?: boolean }).soundsEnabled === 'boolean' ? (p as { soundsEnabled?: boolean }).soundsEnabled! : true,
+          hasCompletedTour: typeof (p as { hasCompletedTour?: boolean }).hasCompletedTour === 'boolean' ? (p as { hasCompletedTour?: boolean }).hasCompletedTour! : false,
+          onboardingTourActive: false,
         };
       },
     }

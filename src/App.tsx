@@ -14,6 +14,9 @@ import { CommandPalette } from './components/CommandPalette';
 import { MorningIntent } from './components/MorningIntent';
 import { RhythmModal } from './components/RhythmModal';
 import { HoldingPenDock } from './components/HoldingPenDock';
+import { OnboardingTour } from './components/OnboardingTour';
+import { Footer } from './components/Footer';
+import { PrivacyModal } from './components/PrivacyModal';
 import { useStore } from './store';
 import { useAuth } from './auth';
 
@@ -24,6 +27,7 @@ function App() {
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
   const [isDefragging, setIsDefragging] = useState(false);
   const [isRhythmOpen, setIsRhythmOpen] = useState(false);
+  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const { undo, redo, undoStack, redoStack } = useStore();
   const { syncStatus, syncError, retrySync } = useAuth();
 
@@ -126,6 +130,8 @@ function App() {
 
       <AnalyticsDashboard />
 
+      <Footer onOpenPrivacy={() => setIsPrivacyOpen(true)} />
+
       <FocusShutter />
 
       <NewTaskModal
@@ -141,6 +147,11 @@ function App() {
       <HelpModal
         isOpen={isHelpOpen}
         onClose={() => setIsHelpOpen(false)}
+      />
+
+      <PrivacyModal
+        isOpen={isPrivacyOpen}
+        onClose={() => setIsPrivacyOpen(false)}
       />
 
       <ArchiveModal
@@ -167,6 +178,7 @@ function App() {
 
       <CommandPalette />
       <MorningIntent />
+      <OnboardingTour />
 
       <ToastContainer />
     </>

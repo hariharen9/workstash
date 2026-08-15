@@ -12,6 +12,7 @@ import {
   Clock,
   RotateCcw,
   X,
+  Rocket,
 } from 'lucide-react';
 import { useStore } from '../store';
 import { playClick } from '../sounds';
@@ -21,6 +22,7 @@ type HelpTab = 'philosophy' | 'blocks' | 'workflows' | 'shortcuts';
 export const HelpModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState<HelpTab>('philosophy');
   const soundsEnabled = useStore((s) => s.soundsEnabled);
+  const startOnboardingTour = useStore((s) => s.startOnboardingTour);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -296,9 +298,18 @@ export const HelpModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ 
 
         {/* Footer */}
         <div className="flex items-center justify-between pt-4 border-t border-line/80 shrink-0">
-          <span className="text-[0.72rem] font-mono text-faint">
-            Press <kbd className="px-1.5 py-0.5 rounded bg-elevated border border-line text-text">Esc</kbd> anytime to close
-          </span>
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              setTimeout(() => startOnboardingTour(), 100);
+            }}
+            className="py-2.5 px-3.5 rounded-xl text-xs font-semibold bg-elevated hover:bg-elevated-hi border border-line text-text flex items-center gap-1.5 cursor-pointer transition-colors"
+          >
+            <Rocket size={13} className="text-violet" />
+            <span>Launch Interactive Tour</span>
+          </button>
+
           <button
             type="button"
             onClick={onClose}
