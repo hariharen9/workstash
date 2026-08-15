@@ -4,7 +4,6 @@ import { useStore, type Task, type TaskCategory, occupiedCells } from '../store'
 import { TileContent } from './TileContent';
 import { TileCompleted } from './TileCompleted';
 import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import { GlowCard } from './GlowCard';
 
 const DragIcon = () => (
@@ -72,7 +71,7 @@ export const Tile: React.FC<{ task: Task; isBeingDragged?: boolean; isDragTarget
   const titleInputRef = useRef<HTMLInputElement>(null);
   const catMenuRef = useRef<HTMLDivElement>(null);
 
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
+  const { attributes, listeners, setNodeRef } = useSortable({ id: task.id });
 
   // Forward the sortable ref AND keep our own ref for measuring resize
   const combinedRef = useCallback((el: HTMLElement | null) => {
@@ -222,16 +221,10 @@ export const Tile: React.FC<{ task: Task; isBeingDragged?: boolean; isDragTarget
     pen: 'blue'
   } as const;
 
-  const style = {
+  const style: React.CSSProperties = {
     gridColumn: `span ${task.w}`,
     gridRow: `span ${task.h}`,
-    transform: CSS.Transform.toString(transform),
-    // When this tile is being displaced by the drag, snap-dodge with a tight spring (200ms).
-    // When it IS the dragged tile, no transition needed — the DragOverlay handles motion.
-    transition: isDragging
-      ? 'none'
-      : (transition || 'transform 200ms cubic-bezier(0.25, 1, 0.5, 1)'),
-    zIndex: isDragging ? 50 : 1,
+    zIndex: isDragTarget ? 20 : 1,
   };
 
   const titleClass = isMicro
@@ -307,9 +300,16 @@ export const Tile: React.FC<{ task: Task; isBeingDragged?: boolean; isDragTarget
           <span>{task.completed ? 'Done ✓' : 'Done'}</span>
         </button>
       )}
-      <div {...attributes} {...listeners} className="tile-action cursor-grab active:cursor-grabbing" title="Drag to reorder">
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        className="tile-action !w-7 !h-7 cursor-grab active:cursor-grabbing hover:bg-violet-dim hover:text-violet hover:border-violet/40 text-muted"
+        title="Drag to reorder"
+        aria-label="Drag to reorder"
+      >
         <DragIcon />
-      </div>
+      </button>
       {!isMicro && (
         <button type="button" className="tile-action" title="Focus Shutter (F)" onClick={(e) => { e.stopPropagation(); openShutter(task.id); }}>
           <ExpandIcon />
@@ -423,6 +423,32 @@ export const Tile: React.FC<{ task: Task; isBeingDragged?: boolean; isDragTarget
     </div>
   );
 
+  if (isBeingDragged) {
+    return (
+      <div
+        ref={combinedRef}
+        style={style}
+        className={`rounded-radius border-2 border-dashed border-violet/40 bg-violet/[0.04] flex flex-col items-center justify-center gap-2 p-3.5 select-none animate-pulse relative transition-all duration-200 ${
+          isDragTarget ? 'border-violet ring-2 ring-violet/50 bg-violet/10' : ''
+        }`}
+      >
+        <div className="w-8 h-8 rounded-xl bg-violet-dim/70 border border-violet/30 flex items-center justify-center text-violet shadow-sm">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M5 9l4-4 4 4M9 5v14M19 15l-4 4-4-4M15 19V5" />
+          </svg>
+        </div>
+        <div className="flex flex-col items-center gap-0.5 text-center">
+          <span className="font-mono text-[0.68rem] text-violet font-semibold tracking-wider uppercase">
+            {task.w}×{task.h} Blueprint Slot
+          </span>
+          <span className="text-[0.68rem] text-muted truncate max-w-[180px]">
+            &ldquo;{task.title}&rdquo;
+          </span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <GlowCard
       ref={combinedRef}
@@ -430,27 +456,19 @@ export const Tile: React.FC<{ task: Task; isBeingDragged?: boolean; isDragTarget
       data-lenis-prevent="true"
       data-task-id={task.id}
       glowColor={glowColorMap[task.cat as keyof typeof glowColorMap] || 'blue'}
-      className={`bg-surface/95 shadow-tile overflow-hidden flex flex-col transition-[background,box-shadow,opacity,filter] duration-300 min-h-0 relative ${catClass} ${
+      className={`bg-surface/95 shadow-tile overflow-hidden flex flex-col transition-[background,box-shadow,opacity,filter,transform] duration-200 min-h-0 relative ${catClass} ${
         isMicro ? 'p-3' : isLarge ? 'p-4' : 'p-3.5'
       } ${
         isTagSpotlightActive && matchesTag ? '!opacity-100 ring-2 ring-violet shadow-[0_0_24px_rgba(155,140,255,0.45)]' : ''
       } ${
         isTagSpotlightActive && !matchesTag ? 'opacity-25 saturate-[0.25] filter blur-[0.4px]' : ''
       } ${
+        isDragTarget ? '!ring-2 !ring-violet !bg-violet/[0.08] !shadow-[0_0_30px_rgba(155,140,255,0.45)] scale-[1.015]' : ''
+      } ${
         task.completed ? 'opacity-[0.78] saturate-[0.8] border-teal/40 bg-teal-dim/10 ring-1 ring-teal/20' : ''
       } ${
         task.parked ? 'opacity-[0.38] saturate-[0.45]' : ''
       } ${isCompleting ? 'animate-completePop' : ''} ${isEntering ? 'animate-tileIn' : ''} ${
-        // Ghost slot: the original position while DragOverlay floats above
-        isBeingDragged
-          ? 'opacity-[0.28] scale-[0.97] ring-2 ring-violet/30 ring-inset saturate-[0.3] pointer-events-none cursor-default'
-          : isDragging
-          ? 'opacity-55 ring-2 ring-violet/70 shadow-xl scale-[1.015]'
-          : ''
-      } ${
-        // Drop target highlight
-        isDragTarget ? 'ring-2 ring-violet/60 bg-violet/5' : ''
-      } ${
         isHovered && !task.parked && !isBeingDragged ? 'bg-elevated/40' : ''
       } ${
         isSlimWide ? 'border-l-[3px] border-l-teal/40' : ''
@@ -460,6 +478,12 @@ export const Tile: React.FC<{ task: Task; isBeingDragged?: boolean; isDragTarget
       onMouseLeave={() => setIsHovered(false)}
       onDoubleClick={handleDoubleClick}
     >
+      {/* Drop indicator badge */}
+      {isDragTarget && (
+        <div className="absolute top-2 left-2 z-30 font-mono text-[0.625rem] font-bold bg-violet text-void px-2 py-0.5 rounded-md shadow-brand pointer-events-none flex items-center gap-1 animate-bounce">
+          <span>⇋ Drop to Swap</span>
+        </div>
+      )}
       {task.completed ? (
         <TileCompleted task={task} onUndo={handleHeroCheck} onArchive={handleArchive} />
       ) : isMicro ? (

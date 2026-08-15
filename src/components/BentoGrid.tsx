@@ -1,20 +1,151 @@
 import React, { useState } from 'react';
-import { useStore, occupiedCells } from '../store';
+import { useStore, occupiedCells, type Task } from '../store';
 import { Tile } from './Tile';
 import { HoldingPenDock } from './HoldingPenDock';
 import {
   DndContext,
+  pointerWithin,
+  rectIntersection,
   closestCenter,
   PointerSensor,
   useSensor,
   useSensors,
   DragOverlay,
+  defaultDropAnimationSideEffects,
   type DragStartEvent,
   type DragEndEvent,
   type DragOverEvent,
+  type CollisionDetection,
+  type DropAnimation,
 } from '@dnd-kit/core';
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
-import { TileContent } from './TileContent';
+import { Clock, Battery, CheckCircle2, Sparkles, Flame } from 'lucide-react';
+
+const customCollisionDetection: CollisionDetection = (args) => {
+  // 1. Try pointerWithin (where user's cursor directly points)
+  const pointerCollisions = pointerWithin(args);
+  if (pointerCollisions.length > 0) {
+    return pointerCollisions;
+  }
+  // 2. Fall back to rectIntersection (bounding overlap)
+  const rectCollisions = rectIntersection(args);
+  if (rectCollisions.length > 0) {
+    return rectCollisions;
+  }
+  // 3. Fall back to closestCenter
+  return closestCenter(args);
+};
+
+const dropAnimationConfig: DropAnimation = {
+  duration: 180,
+  easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+  sideEffects: defaultDropAnimationSideEffects({
+    styles: {
+      active: {
+        opacity: '0.3',
+      },
+    },
+  }),
+};
+
+const DragOverlayCard: React.FC<{ task: Task }> = ({ task }) => {
+  const catColor =
+    task.cat === 'focus' ? 'violet' :
+    task.cat === 'fire' ? 'amber' : 'teal';
+
+  const subtasksTotal = task.subtasks?.length || 0;
+  const subtasksDone = task.subtasks?.filter(s => s.done).length || 0;
+
+  // Approximate realistic card width based on cell width
+  const cardWidth = task.w >= 3 ? 380 : task.w === 2 ? 290 : 210;
+  const cardMinHeight = task.h >= 2 ? 160 : 100;
+
+  return (
+    <div
+      className={`bg-surface/98 backdrop-blur-xl rounded-[18px] border p-4 shadow-[0_28px_60px_-10px_rgba(0,0,0,0.85),0_0_35px_rgba(155,140,255,0.4)] flex flex-col gap-2.5 cursor-grabbing select-none transition-transform pointer-events-none ring-1 ring-violet/40 ${
+        catColor === 'violet'
+          ? 'border-violet/60 shadow-[inset_3px_0_0_#9B8CFF]'
+          : catColor === 'amber'
+          ? 'border-amber/60 shadow-[inset_3px_0_0_#F6B03A]'
+          : 'border-teal/60 shadow-[inset_3px_0_0_#4FE3CE]'
+      }`}
+      style={{
+        width: `${cardWidth}px`,
+        minHeight: `${cardMinHeight}px`,
+        transform: 'rotate(1.5deg) scale(1.03)',
+      }}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <h4 className="font-display font-semibold text-[0.95rem] text-text m-0 break-words line-clamp-2 leading-snug">
+          {task.title}
+        </h4>
+        <span
+          className={`font-mono text-[0.625rem] font-semibold tracking-[0.04em] uppercase px-2 py-0.5 rounded-md shrink-0 flex items-center gap-1 ${
+            catColor === 'violet'
+              ? 'bg-violet-dim text-violet'
+              : catColor === 'amber'
+              ? 'bg-amber-dim text-amber'
+              : 'bg-teal-dim text-teal'
+          }`}
+        >
+          {task.cat === 'focus' ? <Sparkles size={11} /> : task.cat === 'fire' ? <Flame size={11} /> : <CheckCircle2 size={11} />}
+          <span>{task.cat === 'focus' ? 'Focus' : task.cat === 'fire' ? 'Urgent' : 'Admin'}</span>
+        </span>
+      </div>
+
+      {/* Tags */}
+      {task.tags && task.tags.length > 0 && (
+        <div className="flex items-center gap-1 flex-wrap">
+          {task.tags.slice(0, 3).map(tag => (
+            <span
+              key={tag}
+              className="font-mono text-[0.625rem] font-semibold px-1.5 py-0.5 rounded bg-violet/15 border border-violet/30 text-violet"
+            >
+              {tag}
+            </span>
+          ))}
+          {task.tags.length > 3 && (
+            <span className="font-mono text-[0.6rem] text-faint">+{task.tags.length - 3}</span>
+          )}
+        </div>
+      )}
+
+      {/* Snippet / Subtask Summary */}
+      {subtasksTotal > 0 ? (
+        <div className="flex items-center gap-2 text-[0.72rem] font-mono text-muted bg-void/50 px-2.5 py-1.5 rounded-lg border border-line/50">
+          <span className="w-2 h-2 rounded-full bg-teal shrink-0" />
+          <span className="truncate">Checklist: {subtasksDone}/{subtasksTotal} completed</span>
+        </div>
+      ) : task.notes ? (
+        <p className="text-[0.72rem] font-mono text-[#C8E8DC] line-clamp-2 m-0 bg-void/50 p-2 rounded-lg border border-line/50 leading-relaxed">
+          {task.notes}
+        </p>
+      ) : null}
+
+      {/* Footer Meta */}
+      <div className="flex items-center justify-between mt-auto pt-2 border-t border-line/50 text-[0.68rem] font-mono text-faint">
+        <div className="flex items-center gap-2.5">
+          <span className="bg-elevated px-1.5 py-0.5 rounded text-text font-semibold border border-line">
+            {task.w}×{task.h}
+          </span>
+          {task.timer && (
+            <span className="flex items-center gap-1">
+              <Clock size={11} />
+              <span>{Math.floor(task.timer.total / 60)}m</span>
+            </span>
+          )}
+          {task.energy && (
+            <span className="flex items-center gap-1">
+              <Battery size={11} />
+              <span>{task.energy}/5</span>
+            </span>
+          )}
+        </div>
+        <span className="text-violet font-semibold tracking-wide">◈ Release to Drop</span>
+      </div>
+    </div>
+  );
+};
 
 export const BentoGrid: React.FC<{ onNewTask: () => void }> = ({ onNewTask }) => {
   const { tasks, gridLayout, reorderTasks, promotePenItem } = useStore();
@@ -32,8 +163,7 @@ export const BentoGrid: React.FC<{ onNewTask: () => void }> = ({ onNewTask }) =>
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        // Require 8px movement AND at least 120ms hold — prevents accidental drags on clicks/text-select
-        distance: 8,
+        distance: 6, // 6px movement triggers drag — snappy without blocking clicks
       },
     })
   );
@@ -89,7 +219,7 @@ export const BentoGrid: React.FC<{ onNewTask: () => void }> = ({ onNewTask }) =>
         </div>
         <DndContext
           sensors={sensors}
-          collisionDetection={closestCenter}
+          collisionDetection={customCollisionDetection}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
@@ -124,38 +254,8 @@ export const BentoGrid: React.FC<{ onNewTask: () => void }> = ({ onNewTask }) =>
           </SortableContext>
 
           {/* DragOverlay: floating clone that follows the cursor smoothly */}
-          <DragOverlay
-            dropAnimation={{
-              duration: 220,
-              easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
-            }}
-          >
-            {activeTask ? (
-              <div
-                className={`bg-surface shadow-2xl ring-2 ring-violet/50 rounded-radius flex flex-col overflow-hidden ${
-                  activeTask.w >= 3 && activeTask.h >= 2 ? 'p-4' :
-                  activeTask.w === 1 && activeTask.h === 1 ? 'p-3' : 'p-3.5'
-                }`}
-                style={{
-                  gridColumn: `span ${activeTask.w}`,
-                  gridRow: `span ${activeTask.h}`,
-                  width: '100%',
-                  height: '100%',
-                  opacity: 0.97,
-                  transform: 'scale(1.035) rotate(-0.6deg)',
-                  boxShadow: '0 28px 60px rgba(0,0,0,0.65), 0 0 0 2px rgba(139,92,246,0.45)',
-                  backdropFilter: 'blur(4px)',
-                  cursor: 'grabbing',
-                }}
-              >
-                <p className="font-display font-semibold text-[0.95rem] leading-snug tracking-[-0.02em] m-0 break-words text-text mb-2">
-                  {activeTask.title}
-                </p>
-                <div className="flex-1 min-h-0 opacity-60">
-                  <TileContent task={activeTask} disableTick />
-                </div>
-              </div>
-            ) : null}
+          <DragOverlay dropAnimation={dropAnimationConfig}>
+            {activeTask ? <DragOverlayCard task={activeTask} /> : null}
           </DragOverlay>
         </DndContext>
       </div>
