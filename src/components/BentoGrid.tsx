@@ -214,7 +214,7 @@ export const BentoGrid: React.FC<{ onNewTask: () => void }> = ({ onNewTask }) =>
       }}
       onDrop={handlePenDrop}
     >
-      <div className="flex-1 p-[18px_22px_10px] flex flex-col min-h-0">
+      <div className="flex-1 p-3 sm:p-4 md:p-[18px_22px_10px] pb-36 md:pb-3 flex flex-col min-h-0">
         <div className={`hidden items-center gap-2.5 text-[0.8125rem] text-amber font-medium mb-3 p-3 bg-amber-dim border border-amber/25 rounded-xl ${isFull ? '!flex' : ''}`}>
           <span className="font-mono text-[0.7rem] tracking-wide uppercase">Full</span>
           Grid at capacity — resize, complete, or archive a block before adding more.
@@ -228,10 +228,10 @@ export const BentoGrid: React.FC<{ onNewTask: () => void }> = ({ onNewTask }) =>
           onDragCancel={handleDragCancel}
         >
           <SortableContext items={gridTasks.map(t => t.id)} strategy={rectSortingStrategy}>
-            <div className={`flex-1 grid min-h-0 grid-flow-dense gap-3.5 ${
-              gridLayout === '8x4' ? 'grid-cols-8 grid-rows-4' :
-              gridLayout === '6x5' ? 'grid-cols-6 grid-rows-5' :
-              'grid-cols-6 grid-rows-4'
+            <div className={`flex-1 grid min-h-0 grid-flow-dense gap-2.5 sm:gap-3 md:gap-3.5 grid-cols-2 auto-rows-[150px] md:auto-rows-auto ${
+              gridLayout === '8x4' ? 'md:grid-cols-8 md:grid-rows-4' :
+              gridLayout === '6x5' ? 'md:grid-cols-6 md:grid-rows-5' :
+              'md:grid-cols-6 md:grid-rows-4'
             }`}>
               {gridTasks.map(t => (
                 <Tile
@@ -244,7 +244,7 @@ export const BentoGrid: React.FC<{ onNewTask: () => void }> = ({ onNewTask }) =>
               {!isFull && (
                 <button
                   type="button"
-                  className="col-span-1 row-span-1 rounded-radius border border-dashed border-line flex flex-col items-center justify-center gap-1 cursor-pointer text-faint transition-all duration-200 hover:border-faint hover:text-muted hover:bg-surface/60"
+                  className="col-span-1 row-span-1 rounded-radius border border-dashed border-line flex flex-col items-center justify-center gap-1 cursor-pointer text-faint transition-all duration-200 hover:border-faint hover:text-muted hover:bg-surface/60 min-h-[150px] md:min-h-0"
                   title="Add a block"
                   onClick={onNewTask}
                 >

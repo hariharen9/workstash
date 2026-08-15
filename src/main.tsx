@@ -14,6 +14,16 @@ const Root = () => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
+  useEffect(() => {
+    if ('serviceWorker' in navigator && import.meta.env.PROD) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {
+          // Fallback gracefully if SW registration is restricted
+        });
+      });
+    }
+  }, []);
+
   if (loading) {
     return (
       <div className="fixed inset-0 bg-void flex items-center justify-center">

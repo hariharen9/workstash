@@ -1,18 +1,28 @@
 {
-  "name": "WorkStash",
+  "name": "WorkStash - Spatial Task Workspace",
   "short_name": "WorkStash",
-  "description": "The spatial task workspace for people who think in space, not lists.",
+  "description": "The spatial task workspace for people who think in space, not in lists.",
   "start_url": "/",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#070A10",
   "theme_color": "#070A10",
-  "orientation": "any",
   "icons": [
     {
       "src": "/favicon.svg",
-      "sizes": "any",
+      "sizes": "192x192 512x512",
       "type": "image/svg+xml",
       "purpose": "any"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
     }
+  ],
+  "categories": [
+    "productivity",
+    "utilities"
   ]
 }

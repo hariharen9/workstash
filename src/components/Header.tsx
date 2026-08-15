@@ -206,50 +206,56 @@ export const Header: React.FC<{ onNewTask: () => void; onDefrag: () => void; onO
       as="header"
       customSize
       glowColor="purple"
-      className="w-full rounded-t-none rounded-b-2xl flex items-center justify-between gap-4 p-[14px_22px] shrink-0 bg-surface/90"
+      className="w-full rounded-t-none rounded-b-2xl flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 md:gap-4 p-[10px_12px] sm:p-[12px_16px] md:p-[14px_22px] shrink-0 bg-surface/90"
       style={{ border: 'none', borderBottom: '1px solid var(--color-line)', zIndex: 40 }}
     >
-      <div className="flex items-center gap-6 min-w-0">
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="w-7 h-7 rounded-[8px] bg-[conic-gradient(from_220deg,theme(colors.violet),theme(colors.teal),theme(colors.amber),theme(colors.violet))] grid place-items-center shadow-brand shrink-0">
-            <span className="w-2.5 h-2.5 rounded-[3px] bg-void"></span>
+      {/* Primary Row: Brand, Top Controls & Action Buttons */}
+      <div className="w-full flex items-center justify-between gap-2 min-w-0">
+        <div className="flex items-center gap-2 sm:gap-6 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-[8px] bg-[conic-gradient(from_220deg,theme(colors.violet),theme(colors.teal),theme(colors.amber),theme(colors.violet))] grid place-items-center shadow-brand shrink-0">
+              <span className="w-2.5 h-2.5 rounded-[3px] bg-void"></span>
+            </div>
+            <div className="shrink-0">
+              <h1 className="font-display text-[1rem] sm:text-[1.05rem] font-semibold m-0 tracking-[-0.03em] leading-none text-text">
+                WorkStash
+              </h1>
+              <p className="text-muted text-[0.65rem] sm:text-[0.72rem] m-0 mt-0.5 tracking-wide font-medium hidden sm:block">
+                Spatial task workspace
+              </p>
+            </div>
           </div>
-          <div className="min-w-0">
-            <h1 className="font-display text-[1.05rem] font-semibold m-0 tracking-[-0.03em] leading-none">
-              WorkStash
-            </h1>
-            <p className="text-muted text-[0.72rem] m-0 mt-1 tracking-wide font-medium">Spatial task workspace</p>
+
+          {/* Desktop Topo Mode Switcher */}
+          <div className="hidden md:flex gap-1 bg-void/50 p-1 rounded-xl border border-line shrink-0">
+            {modes.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                className={`border-none bg-transparent text-muted text-[0.8125rem] font-semibold py-2 px-3 rounded-lg cursor-pointer transition-all duration-200 flex items-center gap-2 hover:text-text ${
+                  mode === m.id ? 'bg-elevated-hi text-text shadow-[inset_0_0_0_1px_theme(colors.line)]' : ''
+                }`}
+                onClick={() => handleTopoClick(m.id)}
+              >
+                <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: m.color }} />
+                {m.label}
+              </button>
+            ))}
           </div>
         </div>
 
-        <div className="flex gap-1 bg-void/50 p-1 rounded-xl border border-line shrink-0">
-          {modes.map((m) => (
-            <button
-              key={m.id}
-              type="button"
-              className={`border-none bg-transparent text-muted text-[0.8125rem] font-semibold py-2 px-3 rounded-lg cursor-pointer transition-all duration-200 flex items-center gap-2 hover:text-text ${
-                mode === m.id ? 'bg-elevated-hi text-text shadow-[inset_0_0_0_1px_theme(colors.line)]' : ''
-              }`}
-              onClick={() => handleTopoClick(m.id)}
-            >
-              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: m.color }} />
-              {m.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2.5 shrink-0">
-        <div className="relative flex items-center gap-2.5 mr-1 group/cap">
-          <span className="text-[0.75rem] text-muted font-mono font-medium tracking-wide tabular-nums cursor-default select-none">
-            {used}/{TOTAL_CELLS}
-          </span>
-          <div className="w-[132px] h-1.5 rounded-full bg-elevated overflow-hidden border border-line/60">
-            <div
-              className="h-full rounded-full transition-[width,background] duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
-              style={{ width: `${capacityPct}%`, background: capColor }}
-            />
-          </div>
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Capacity pill: hidden on tiny screen, shown as neat pill on sm+ */}
+          <div className="hidden sm:flex relative items-center gap-2 mr-1 group/cap shrink-0">
+            <span className="text-[0.75rem] text-muted font-mono font-medium tracking-wide tabular-nums cursor-default select-none">
+              {used}/{TOTAL_CELLS}
+            </span>
+            <div className="w-[80px] md:w-[132px] h-1.5 rounded-full bg-elevated overflow-hidden border border-line/60">
+              <div
+                className="h-full rounded-full transition-[width,background] duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
+                style={{ width: `${capacityPct}%`, background: capColor }}
+              />
+            </div>
 
           {/* Capacity tooltip */}
           <div className="pointer-events-none absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[260px] opacity-0 group-hover/cap:opacity-100 transition-opacity duration-200 z-50 flex flex-col items-center">
@@ -298,14 +304,14 @@ export const Header: React.FC<{ onNewTask: () => void; onDefrag: () => void; onO
         {selectedTagFilter && (
           <button
             type="button"
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-violet-dim border border-violet/40 text-violet font-mono text-[0.72rem] font-semibold hover:bg-violet/20 transition-colors cursor-pointer shadow-sm"
+            className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-violet-dim border border-violet/40 text-violet font-mono text-[0.7rem] font-semibold hover:bg-violet/20 transition-colors cursor-pointer shadow-sm shrink-0"
             onClick={() => {
               setSelectedTagFilter(null);
               addToast('Cleared tag spotlight', '✓');
             }}
             title="Click to clear tag spotlight"
           >
-            <span>Spotlight: {selectedTagFilter}</span>
+            <span>#{selectedTagFilter}</span>
             <span className="text-[0.65rem] opacity-70">✕</span>
           </button>
         )}
@@ -355,15 +361,16 @@ export const Header: React.FC<{ onNewTask: () => void; onDefrag: () => void; onO
         />
         <button
           type="button"
-          className="border-none cursor-pointer font-semibold text-[0.8125rem] py-2 px-3.5 rounded-[10px] transition-all duration-200 flex items-center gap-1.5 bg-text text-void hover:-translate-y-px hover:shadow-[0_8px_20px_-6px_rgba(255,255,255,0.2)]"
+          className="border-none cursor-pointer font-semibold text-[0.8125rem] py-2 px-2.5 sm:px-3.5 rounded-[10px] transition-all duration-200 flex items-center gap-1 bg-text text-void hover:-translate-y-px hover:shadow-[0_8px_20px_-6px_rgba(255,255,255,0.2)] shrink-0"
           onClick={onNewTask}
         >
-          + New Task
+          <span className="text-base font-bold leading-none">+</span>
+          <span className="hidden sm:inline">New Task</span>
         </button>
         {/* Theme Toggle */}
         <button
           type="button"
-          className="tile-action !w-9 !h-9"
+          className="tile-action !w-8 !h-8 sm:!w-9 sm:!h-9 shrink-0"
           title={theme === 'dark' ? 'Switch to Light mode' : 'Switch to Dark mode'}
           onClick={() => {
             toggleTheme();
@@ -373,33 +380,33 @@ export const Header: React.FC<{ onNewTask: () => void; onDefrag: () => void; onO
           aria-label="Toggle theme"
         >
           {theme === 'dark' ? (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <circle cx="12" cy="12" r="4" />
               <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
             </svg>
           ) : (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
             </svg>
           )}
         </button>
         <button
           type="button"
-          className="tile-action !w-9 !h-9 !text-[0.95rem] !font-semibold"
-          title="About WorkStash"
+          className="tile-action !w-8 !h-8 sm:!w-9 sm:!h-9 shrink-0"
+          title="Settings & Workspace Preferences"
+          onClick={onOpenSettings}
+          aria-label="Settings"
+        >
+          <Settings size={15} />
+        </button>
+        <button
+          type="button"
+          className="tile-action !w-8 !h-8 sm:!w-9 sm:!h-9 font-semibold text-[0.85rem] shrink-0"
+          title="Guide & Keyboard Shortcuts (?)"
           onClick={onOpenHelp}
           aria-label="Help"
         >
           ?
-        </button>
-        <button
-          type="button"
-          className="tile-action !w-9 !h-9"
-          title="Settings"
-          onClick={onOpenSettings}
-          aria-label="Settings"
-        >
-          <Settings size={16} />
         </button>
 
         {user && (
@@ -422,6 +429,24 @@ export const Header: React.FC<{ onNewTask: () => void; onDefrag: () => void; onO
             </button>
           </div>
         )}
+      </div>
+      </div>
+
+      {/* Secondary Mobile Row: Mode Switcher */}
+      <div className="flex md:hidden gap-1 bg-void/50 p-1 rounded-xl border border-line w-full overflow-x-auto no-scrollbar shrink-0">
+        {modes.map((m) => (
+          <button
+            key={m.id}
+            type="button"
+            className={`border-none bg-transparent text-muted text-[0.75rem] font-semibold py-1.5 px-2.5 rounded-lg cursor-pointer transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap hover:text-text shrink-0 ${
+              mode === m.id ? 'bg-elevated-hi text-text shadow-[inset_0_0_0_1px_theme(colors.line)] font-bold' : ''
+            }`}
+            onClick={() => handleTopoClick(m.id)}
+          >
+            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: m.color }} />
+            {m.label}
+          </button>
+        ))}
       </div>
     </GlowCard>
   );

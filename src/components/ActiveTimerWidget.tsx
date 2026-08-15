@@ -492,14 +492,20 @@ const CSS = `
 
 .pomo-root{
   position: fixed;
-  left: 24px;
-  bottom: 24px;
+  left: 16px;
+  bottom: 16px;
   z-index: 999;
   font-family: 'Inter', system-ui, sans-serif;
   --panel: #17131D;
   --panel-2: #221C2B;
   --hi: #F3EFF8;
   --lo: #9089A0;
+}
+@media (min-width: 640px) {
+  .pomo-root {
+    left: 24px;
+    bottom: 24px;
+  }
 }
 
 .pomo-orb{
@@ -537,6 +543,7 @@ const CSS = `
   position: absolute;
   bottom: 0; left: 0;
   width: 296px;
+  max-width: calc(100vw - 32px);
   background: linear-gradient(180deg, var(--panel), #120F16);
   border: 1px solid rgba(255,255,255,0.07);
   border-radius: 24px;

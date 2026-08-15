@@ -55,6 +55,68 @@ export const TileContent: React.FC<{ task: Task; disableTick?: boolean }> = ({ t
     setListAdding(false);
   };
 
+  const renderMobileCardContent = () => {
+    return (
+      <div className="flex md:hidden flex-col gap-1.5 h-full justify-between min-h-0 text-xs py-0.5">
+        {totalCount > 0 ? (
+          <div className="flex flex-col gap-1.5 min-h-0 flex-1 justify-center">
+            <div className="flex items-center justify-between text-[0.7rem] font-mono text-muted">
+              <span>Checklist</span>
+              <span className="font-semibold text-text">{doneCount}/{totalCount}</span>
+            </div>
+            {/* Mini progress bar */}
+            <div className="w-full h-1 rounded-full bg-elevated overflow-hidden border border-line/40">
+              <div
+                className="h-full bg-teal transition-all duration-300"
+                style={{ width: `${totalCount ? (doneCount / totalCount) * 100 : 0}%` }}
+              />
+            </div>
+            {/* Top pending subtask */}
+            {task.subtasks?.slice(0, 1).map((s) => (
+              <div
+                key={s.id}
+                className="flex items-center gap-1.5 text-[0.75rem] py-0.5 text-text truncate"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  type="button"
+                  className={`check-box !w-3.5 !h-3.5 shrink-0 ${s.done ? 'is-done' : ''}`}
+                  onClick={() => {
+                    toggleSubtask(task.id, s.id);
+                    if (soundsEnabled) playSubtaskToggle();
+                  }}
+                >
+                  {s.done && <CheckIcon />}
+                </button>
+                <span className={`truncate ${s.done ? 'line-through text-faint' : ''}`}>
+                  {s.text}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : task.notes ? (
+          <div className="flex flex-col justify-center flex-1 text-[0.75rem] text-muted line-clamp-2 italic">
+            <span>&ldquo;{task.notes.slice(0, 55)}...&rdquo;</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 text-faint text-[0.72rem] font-mono flex-1 items-center">
+            <span>⚡ Ready for focus</span>
+          </div>
+        )}
+
+        {/* Bottom meta row on mobile */}
+        <div className="flex items-center justify-between pt-1 border-t border-line/40 shrink-0 text-[0.68rem] font-mono text-faint">
+          {task.timer ? (
+            <span className="text-violet font-semibold">⏱ {Math.floor((task.timer.remaining || 1500) / 60)}m</span>
+          ) : (
+            <span>Energy: {task.energy || 3}/5</span>
+          )}
+          <span className="text-violet font-sans font-medium">Tap to focus ↗</span>
+        </div>
+      </div>
+    );
+  };
+
   /** Shared subtask list renderer used by several layouts. */
   const renderSubtasks = (opts?: { compact?: boolean; showInput?: boolean }) => {
     const compact   = opts?.compact ?? false;
@@ -120,258 +182,270 @@ export const TileContent: React.FC<{ task: Task; disableTick?: boolean }> = ({ t
     );
   };
 
-  // --- Slim Wide (w >= 2, h = 1): horizontal checklist strip --------
-  if (isSlimWide) {
-    return (
-      <div className="flex flex-col h-full min-h-0 gap-1">
-        <div className="flex items-center justify-between gap-2 shrink-0 h-6">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-[0.7rem] font-semibold tracking-[0.04em] uppercase text-muted">Checklist</span>
-            <span className="font-mono text-[0.7rem] text-faint tabular-nums">{doneCount}/{totalCount || 0}</span>
-          </div>
-          {!listAdding ? (
-            <button
-              type="button"
-              className="tile-chip !px-2 !py-0.5 !text-[0.7rem] shrink-0"
-              onClick={() => setListAdding(true)}
-              title="Add checklist item"
-            >
-              + Add
-            </button>
-          ) : (
-            <button
-              type="button"
-              className="tile-action !w-6 !h-6 shrink-0 flex items-center justify-center text-muted hover:text-text"
-              onClick={() => setListAdding(false)}
-              title="Cancel"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </div>
-
-        {totalCount > 0 && (
-          <div className="h-0.5 rounded-full bg-elevated overflow-hidden shrink-0">
-            <div
-              className="h-full bg-teal rounded-full transition-[width] duration-300"
-              style={{ width: `${(doneCount / totalCount) * 100}%` }}
-            />
-          </div>
-        )}
-
-        <div className="flex-1 min-h-0 flex flex-col rounded-lg bg-elevated/35 border border-line/50 overflow-hidden">
-          <div className="tile-scroll flex-1 min-h-0 px-1.5 py-1 flex flex-col gap-0.5" data-lenis-prevent="true">
-            {task.subtasks && task.subtasks.length > 0 ? (
-              task.subtasks.map(s => (
-                <div
-                  key={s.id}
-                  className="group flex items-center gap-2 text-[0.78rem] leading-snug text-text py-1 px-1 rounded-md hover:bg-elevated/80 shrink-0 min-h-[1.6rem]"
-                >
-                  <button
-                    type="button"
-                    className={`check-box !w-3.5 !h-3.5 ${s.done ? 'is-done' : ''}`}
-                    onClick={() => toggleSubtask(task.id, s.id)}
-                  >
-                    {s.done && <CheckIcon />}
-                  </button>
-                  <span className={`flex-1 min-w-0 truncate ${s.done ? 'text-faint line-through' : ''}`}>{s.text}</span>
-                  <button
-                    type="button"
-                    className="tile-action !w-5 !h-5 opacity-0 group-hover:opacity-100 flex items-center justify-center text-muted hover:text-text"
-                    onClick={() => removeSubtask(task.id, s.id)}
-                    aria-label="Remove item"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              ))
-            ) : (
-              <div className="text-muted text-[0.75rem] py-3 px-1 m-auto text-center">
-                No items - tap <span className="text-text font-medium">+ Add</span>
-              </div>
-            )}
-          </div>
-
-          {listAdding && (
-            <div className="shrink-0 px-1.5 py-1 border-t border-line/50 bg-elevated/50">
-              <input
-                ref={listAddInputRef}
-                className="tile-field !py-1 !px-2 !text-[0.75rem] !rounded-md !h-7"
-                type="text"
-                placeholder="Type item, Enter..."
-                onKeyDown={(e) => {
-                  e.stopPropagation();
-                  if (e.key === 'Enter') commitListItem();
-                  if (e.key === 'Escape') setListAdding(false);
-                }}
-                onBlur={() => {
-                  if (!listAddInputRef.current?.value.trim()) setListAdding(false);
-                }}
-              />
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // --- Slim Tall (w = 1, h >= 2): vertical checklist column ---------
-  if (isSlimTall) {
-    return (
-      <div className="flex flex-col h-full min-h-0 gap-1.5">
-        <div className="flex items-center justify-between gap-1 shrink-0">
-          <span className="text-[0.65rem] font-semibold tracking-[0.04em] uppercase text-muted">Tasks</span>
-          <span className="font-mono text-[0.65rem] text-faint tabular-nums">{doneCount}/{totalCount || 0}</span>
-        </div>
-        {totalCount > 0 && (
-          <div className="h-0.5 rounded-full bg-elevated overflow-hidden shrink-0">
-            <div
-              className="h-full bg-teal rounded-full transition-[width] duration-300"
-              style={{ width: `${(doneCount / totalCount) * 100}%` }}
-            />
-          </div>
-        )}
-        <div className="flex-1 min-h-0 flex flex-col rounded-lg bg-elevated/35 border border-line/50 overflow-hidden">
-          <div className="tile-scroll flex-1 min-h-0 px-1 py-1 flex flex-col gap-0.5" data-lenis-prevent="true">
-            {task.subtasks && task.subtasks.length > 0 ? (
-              task.subtasks.map(s => (
-                <div
-                  key={s.id}
-                  className="group flex items-start gap-1.5 text-[0.72rem] leading-snug text-text py-1 px-1 rounded-md hover:bg-elevated/80 shrink-0"
-                >
-                  <button
-                    type="button"
-                    className={`check-box !w-3 !h-3 mt-0.5 flex-shrink-0 ${s.done ? 'is-done' : ''}`}
-                    onClick={() => toggleSubtask(task.id, s.id)}
-                    aria-label={s.done ? 'Mark incomplete' : 'Mark complete'}
-                  >
-                    {s.done && <CheckIcon />}
-                  </button>
-                  <span className={`flex-1 min-w-0 break-words ${s.done ? 'text-faint line-through' : ''}`}>
-                    {s.text}
-                  </span>
-                </div>
-              ))
-            ) : (
-              <div className="text-muted text-[0.65rem] py-2 px-0.5 text-center leading-snug">
-                No items
-              </div>
-            )}
-          </div>
-          <div className="shrink-0 px-1 py-1 border-t border-line/50">
-            <input
-              className="tile-field !py-1 !px-1.5 !text-[0.65rem] !rounded-md"
-              type="text"
-              placeholder="+ Add..."
-              ref={subtaskInputRef}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && subtaskInputRef.current?.value.trim()) {
-                  addSubtask(task.id, subtaskInputRef.current.value.trim());
-                  subtaskInputRef.current.value = '';
-                }
-              }}
-            />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // --- Large (w >= 3, h >= 2): side-by-side split pane ---------------
-  if (isLarge) {
-    return (
-      <div className="flex flex-col h-full min-h-0 gap-2.5 relative">
-        <div className="flex-1 min-h-0 grid grid-cols-2 gap-3">
-          <MarkdownNote
-            value={task.notes || ''}
-            onChange={(v) => updateNotes(task.id, v)}
-            placeholder="Notes, errors, decisions..."
-          />
-          <div className="flex flex-col min-h-0 gap-1.5">
-            <div className="flex items-center justify-between shrink-0">
+  // --- Desktop Renderers ---
+  const renderDesktopContent = () => {
+    // Slim Wide (w >= 2, h = 1): horizontal checklist strip
+    if (isSlimWide) {
+      return (
+        <div className="flex flex-col h-full min-h-0 gap-1">
+          <div className="flex items-center justify-between gap-2 shrink-0 h-6">
+            <div className="flex items-center gap-2 min-w-0">
               <span className="text-[0.7rem] font-semibold tracking-[0.04em] uppercase text-muted">Checklist</span>
               <span className="font-mono text-[0.7rem] text-faint tabular-nums">{doneCount}/{totalCount || 0}</span>
             </div>
-            <div className="flex-1 min-h-0 flex flex-col rounded-xl bg-elevated/40 border border-line/50 p-2.5">
-              {renderSubtasks({ compact: false, showInput: true })}
+            {!listAdding ? (
+              <button
+                type="button"
+                className="tile-chip !px-2 !py-0.5 !text-[0.7rem] shrink-0"
+                onClick={() => setListAdding(true)}
+                title="Add checklist item"
+              >
+                + Add
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="tile-action !w-6 !h-6 shrink-0 flex items-center justify-center text-muted hover:text-text"
+                onClick={() => setListAdding(false)}
+                title="Cancel"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {totalCount > 0 && (
+            <div className="h-0.5 rounded-full bg-elevated overflow-hidden shrink-0">
+              <div
+                className="h-full bg-teal rounded-full transition-[width] duration-300"
+                style={{ width: `${(doneCount / totalCount) * 100}%` }}
+              />
+            </div>
+          )}
+
+          <div className="flex-1 min-h-0 flex flex-col rounded-lg bg-elevated/35 border border-line/50 overflow-hidden">
+            <div className="tile-scroll flex-1 min-h-0 px-1.5 py-1 flex flex-col gap-0.5" data-lenis-prevent="true">
+              {task.subtasks && task.subtasks.length > 0 ? (
+                task.subtasks.map(s => (
+                  <div
+                    key={s.id}
+                    className="group flex items-center gap-2 text-[0.78rem] leading-snug text-text py-1 px-1 rounded-md hover:bg-elevated/80 shrink-0 min-h-[1.6rem]"
+                  >
+                    <button
+                      type="button"
+                      className={`check-box !w-3.5 !h-3.5 ${s.done ? 'is-done' : ''}`}
+                      onClick={() => toggleSubtask(task.id, s.id)}
+                    >
+                      {s.done && <CheckIcon />}
+                    </button>
+                    <span className={`flex-1 min-w-0 truncate ${s.done ? 'text-faint line-through' : ''}`}>{s.text}</span>
+                    <button
+                      type="button"
+                      className="tile-action !w-5 !h-5 opacity-0 group-hover:opacity-100 flex items-center justify-center text-muted hover:text-text"
+                      onClick={() => removeSubtask(task.id, s.id)}
+                      aria-label="Remove item"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <div className="text-muted text-[0.75rem] py-3 px-1 m-auto text-center">
+                  No items - tap <span className="text-text font-medium">+ Add</span>
+                </div>
+              )}
+            </div>
+
+            {listAdding && (
+              <div className="shrink-0 px-1.5 py-1 border-t border-line/50 bg-elevated/50">
+                <input
+                  ref={listAddInputRef}
+                  className="tile-field !py-1 !px-2 !text-[0.75rem] !rounded-md !h-7"
+                  type="text"
+                  placeholder="Type item, Enter..."
+                  onKeyDown={(e) => {
+                    e.stopPropagation();
+                    if (e.key === 'Enter') commitListItem();
+                    if (e.key === 'Escape') setListAdding(false);
+                  }}
+                  onBlur={() => {
+                    if (!listAddInputRef.current?.value.trim()) setListAdding(false);
+                  }}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Slim Tall (w = 1, h >= 2): vertical checklist column
+    if (isSlimTall) {
+      return (
+        <div className="flex flex-col h-full min-h-0 gap-1.5">
+          <div className="flex items-center justify-between gap-1 shrink-0">
+            <span className="text-[0.65rem] font-semibold tracking-[0.04em] uppercase text-muted">Tasks</span>
+            <span className="font-mono text-[0.65rem] text-faint tabular-nums">{doneCount}/{totalCount || 0}</span>
+          </div>
+          {totalCount > 0 && (
+            <div className="h-0.5 rounded-full bg-elevated overflow-hidden shrink-0">
+              <div
+                className="h-full bg-teal rounded-full transition-[width] duration-300"
+                style={{ width: `${(doneCount / totalCount) * 100}%` }}
+              />
+            </div>
+          )}
+          <div className="flex-1 min-h-0 flex flex-col rounded-lg bg-elevated/35 border border-line/50 overflow-hidden">
+            <div className="tile-scroll flex-1 min-h-0 px-1 py-1 flex flex-col gap-0.5" data-lenis-prevent="true">
+              {task.subtasks && task.subtasks.length > 0 ? (
+                task.subtasks.map(s => (
+                  <div
+                    key={s.id}
+                    className="group flex items-start gap-1.5 text-[0.72rem] leading-snug text-text py-1 px-1 rounded-md hover:bg-elevated/80 shrink-0"
+                  >
+                    <button
+                      type="button"
+                      className={`check-box !w-3 !h-3 mt-0.5 flex-shrink-0 ${s.done ? 'is-done' : ''}`}
+                      onClick={() => toggleSubtask(task.id, s.id)}
+                      aria-label={s.done ? 'Mark incomplete' : 'Mark complete'}
+                    >
+                      {s.done && <CheckIcon />}
+                    </button>
+                    <span className={`flex-1 min-w-0 break-words ${s.done ? 'text-faint line-through' : ''}`}>
+                      {s.text}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <div className="text-muted text-[0.65rem] py-2 px-0.5 text-center leading-snug">
+                  No items
+                </div>
+              )}
+            </div>
+            <div className="shrink-0 px-1 py-1 border-t border-line/50">
+              <input
+                className="tile-field !py-1 !px-1.5 !text-[0.65rem] !rounded-md"
+                type="text"
+                placeholder="+ Add..."
+                ref={subtaskInputRef}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && subtaskInputRef.current?.value.trim()) {
+                    addSubtask(task.id, subtaskInputRef.current.value.trim());
+                    subtaskInputRef.current.value = '';
+                  }
+                }}
+              />
             </div>
           </div>
         </div>
-        {task.timer && (
-          <div className="shrink-0 rounded-xl bg-elevated/50 border border-line/60 px-3 py-1.5">
-            <TimerControls task={task} minimal />
+      );
+    }
+
+    // Large (w >= 3, h >= 2): side-by-side split pane
+    if (isLarge) {
+      return (
+        <div className="flex flex-col h-full min-h-0 gap-2.5 relative">
+          <div className="flex-1 min-h-0 grid grid-cols-2 gap-3">
+            <MarkdownNote
+              value={task.notes || ''}
+              onChange={(v) => updateNotes(task.id, v)}
+              placeholder="Notes, errors, decisions..."
+            />
+            <div className="flex flex-col min-h-0 gap-1.5">
+              <div className="flex items-center justify-between shrink-0">
+                <span className="text-[0.7rem] font-semibold tracking-[0.04em] uppercase text-muted">Checklist</span>
+                <span className="font-mono text-[0.7rem] text-faint tabular-nums">{doneCount}/{totalCount || 0}</span>
+              </div>
+              <div className="flex-1 min-h-0 flex flex-col rounded-xl bg-elevated/40 border border-line/50 p-2.5">
+                {renderSubtasks({ compact: false, showInput: true })}
+              </div>
+            </div>
           </div>
-        )}
+          {task.timer && (
+            <div className="shrink-0 rounded-xl bg-elevated/50 border border-line/60 px-3 py-1.5">
+              <TimerControls task={task} minimal />
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Standard (w >= 2, h >= 2): tabbed interface
+    const tabs = [
+      { id: 'notes', label: 'Notes' },
+      { id: 'subtasks', label: 'Tasks' },
+      { id: 'timer', label: 'Timer' },
+      { id: 'energy', label: 'Energy' },
+    ] as const;
+
+    return (
+      <div className="flex flex-col h-full min-h-0">
+        <div className="flex gap-0.5 mb-2.5 p-0.5 rounded-xl bg-elevated/70 border border-line/60 w-fit max-w-full overflow-x-auto shrink-0">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              type="button"
+              className={`tile-tab ${task.tab === tab.id ? 'is-active' : ''}`}
+              onClick={() => setTab(task.id, tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex-1 min-h-0 flex flex-col">
+          {task.tab === 'notes' && (
+            <MarkdownNote
+              value={task.notes || ''}
+              onChange={(v) => updateNotes(task.id, v)}
+              placeholder="Scratch notes, error logs, ideas..."
+              className="flex-1 min-h-0"
+            />
+          )}
+          {task.tab === 'subtasks' && (
+            <div className="flex-1 min-h-0 flex flex-col rounded-xl bg-elevated/35 border border-line/50 p-2.5">
+              {renderSubtasks({ compact: false, showInput: true })}
+            </div>
+          )}
+          {task.tab === 'timer' && task.timer && (
+            <div className="flex flex-col justify-center flex-1 min-h-0 tile-scroll">
+              <TimerControls task={task} />
+            </div>
+          )}
+          {task.tab === 'energy' && (
+            <div className="flex flex-col gap-3 justify-center flex-1">
+              <p className="text-[0.8125rem] text-muted m-0 leading-snug">
+                Cognitive energy budget for this block
+              </p>
+              <div className="flex gap-1.5 items-end h-10">
+                {[1, 2, 3, 4, 5].map(i => (
+                  <button
+                    key={i}
+                    type="button"
+                    className={`flex-1 rounded-t-md border-none cursor-pointer transition-colors duration-200 ${
+                      i <= (task.energy || 3) ? 'bg-violet' : 'bg-elevated hover:bg-elevated-hi'
+                    }`}
+                    style={{ height: `${10 + i * 5}px` }}
+                    onClick={() => setEnergy(task.id, i)}
+                    aria-label={`Set energy to ${i}`}
+                  />
+                ))}
+              </div>
+              <p className="font-mono text-[0.75rem] text-muted m-0 tracking-wide">
+                {task.energy || 3} / 5 units allocated
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     );
-  }
-
-  // --- Standard (w >= 2, h >= 2): tabbed interface ------------------
-  const tabs = [
-    { id: 'notes', label: 'Notes' },
-    { id: 'subtasks', label: 'Tasks' },
-    { id: 'timer', label: 'Timer' },
-    { id: 'energy', label: 'Energy' },
-  ] as const;
+  };
 
   return (
-    <div className="flex flex-col h-full min-h-0">
-      <div className="flex gap-0.5 mb-2.5 p-0.5 rounded-xl bg-elevated/70 border border-line/60 w-fit max-w-full overflow-x-auto shrink-0">
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            type="button"
-            className={`tile-tab ${task.tab === tab.id ? 'is-active' : ''}`}
-            onClick={() => setTab(task.id, tab.id)}
-          >
-            {tab.label}
-          </button>
-        ))}
+    <>
+      {renderMobileCardContent()}
+      <div className="hidden md:flex flex-col h-full min-h-0">
+        {renderDesktopContent()}
       </div>
-      <div className="flex-1 min-h-0 flex flex-col">
-        {task.tab === 'notes' && (
-          <MarkdownNote
-            value={task.notes || ''}
-            onChange={(v) => updateNotes(task.id, v)}
-            placeholder="Scratch notes, error logs, ideas..."
-            className="flex-1 min-h-0"
-          />
-        )}
-        {task.tab === 'subtasks' && (
-          <div className="flex-1 min-h-0 flex flex-col rounded-xl bg-elevated/35 border border-line/50 p-2.5">
-            {renderSubtasks({ compact: false, showInput: true })}
-          </div>
-        )}
-        {task.tab === 'timer' && task.timer && (
-          <div className="flex flex-col justify-center flex-1 min-h-0 tile-scroll">
-            <TimerControls task={task} />
-          </div>
-        )}
-        {task.tab === 'energy' && (
-          <div className="flex flex-col gap-3 justify-center flex-1">
-            <p className="text-[0.8125rem] text-muted m-0 leading-snug">
-              Cognitive energy budget for this block
-            </p>
-            <div className="flex gap-1.5 items-end h-10">
-              {[1, 2, 3, 4, 5].map(i => (
-                <button
-                  key={i}
-                  type="button"
-                  className={`flex-1 rounded-t-md border-none cursor-pointer transition-colors duration-200 ${
-                    i <= (task.energy || 3) ? 'bg-violet' : 'bg-elevated hover:bg-elevated-hi'
-                  }`}
-                  style={{ height: `${10 + i * 5}px` }}
-                  onClick={() => setEnergy(task.id, i)}
-                  aria-label={`Set energy to ${i}`}
-                />
-              ))}
-            </div>
-            <p className="font-mono text-[0.75rem] text-muted m-0 tracking-wide">
-              {task.energy || 3} / 5 units allocated
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
+    </>
   );
 };

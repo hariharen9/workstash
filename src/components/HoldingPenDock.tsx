@@ -52,7 +52,7 @@ export const HoldingPenDock: React.FC = () => {
   return (
     <aside 
       aria-label="Inbox quick capture"
-      className="fixed bottom-6 right-6 z-40 flex flex-col items-end"
+      className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 flex flex-col items-end max-w-[calc(100vw-2rem)]"
       data-lenis-prevent="true"
     >
       {/* ─── Expanded Floating Drawer ─── */}
@@ -60,7 +60,7 @@ export const HoldingPenDock: React.FC = () => {
         <GlowCard
           customSize
           glowColor="blue"
-          className="w-[320px] sm:w-[350px] bg-surface/98 backdrop-blur-2xl border border-line rounded-2xl p-4 shadow-2xl flex flex-col gap-3 animate-tileIn"
+          className="w-[300px] sm:w-[350px] max-w-[calc(100vw-2rem)] bg-surface/98 backdrop-blur-2xl border border-line rounded-2xl p-4 shadow-2xl flex flex-col gap-3 animate-tileIn"
           style={{ maxHeight: 'calc(100vh - 120px)' }}
         >
           {/* Header */}

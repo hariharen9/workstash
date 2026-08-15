@@ -201,6 +201,14 @@
     box-shadow: 0 2px 4px rgba(13,15,26,0.07), 0 8px 24px rgba(13,15,26,0.10) !important;
   }
 
+  /* Desktop Grid Spans based on Task dimensions */
+  @media (min-width: 768px) {
+    [data-task-id] {
+      grid-column: span var(--task-w, 1) !important;
+      grid-row: span var(--task-h, 1) !important;
+    }
+  }
+
   /* Modals and overlays — white card on dimmed bg */
   [data-theme="light"] .shadow-2xl,
   [data-theme="light"] .shadow-shutter {

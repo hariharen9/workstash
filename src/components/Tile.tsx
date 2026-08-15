@@ -133,8 +133,8 @@ export const Tile: React.FC<{ task: Task; isBeingDragged?: boolean; isDragTarget
     setIsEditingTitle(false);
   };
 
-  const handleArchive = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleArchive = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     if (isCompleting || isChecking) return;
     if (soundsEnabled) playArchive();
     setIsCompleting(true);
@@ -144,8 +144,8 @@ export const Tile: React.FC<{ task: Task; isBeingDragged?: boolean; isDragTarget
     }, 280);
   };
 
-  const handleHeroCheck = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleHeroCheck = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     if (isChecking) return;
     setIsChecking(true);
     setTimeout(() => {
@@ -225,8 +225,9 @@ export const Tile: React.FC<{ task: Task; isBeingDragged?: boolean; isDragTarget
   } as const;
 
   const style: React.CSSProperties = {
-    gridColumn: `span ${task.w}`,
-    gridRow: `span ${task.h}`,
+    // @ts-expect-error custom CSS properties for desktop grid
+    '--task-w': task.w,
+    '--task-h': task.h,
     zIndex: isDragTarget ? 20 : 1,
   };
 
@@ -453,6 +454,114 @@ export const Tile: React.FC<{ task: Task; isBeingDragged?: boolean; isDragTarget
     );
   }
 
+  const renderMobileTile = () => {
+    const doneSubtasks = task.subtasks?.filter(s => s.done).length ?? 0;
+    const totalSubtasks = task.subtasks?.length ?? 0;
+
+    if (task.completed) {
+      return (
+        <div className="flex flex-col h-full justify-between p-3 relative select-none">
+          <div className="flex items-center justify-between gap-1">
+            <span className="font-mono text-[0.625rem] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-teal-dim text-teal">
+              DONE ✓
+            </span>
+            <button
+              type="button"
+              className="text-[0.68rem] text-faint hover:text-text px-1.5 py-0.5 rounded bg-elevated/80 border border-line"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleHeroCheck();
+              }}
+            >
+              Undo
+            </button>
+          </div>
+          <div className="my-auto py-1">
+            <p className="font-display font-medium text-[0.82rem] leading-snug line-through text-faint line-clamp-2 m-0">
+              {task.title}
+            </p>
+          </div>
+          <div className="flex items-center justify-between text-[0.65rem] font-mono text-faint pt-1 border-t border-line/40">
+            <span>Archiving soon</span>
+            <button
+              type="button"
+              className="text-danger hover:underline"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleArchive();
+              }}
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div 
+        className="flex flex-col h-full justify-between p-3 relative select-none cursor-pointer"
+        onClick={() => openShutter(task.id)}
+      >
+        {/* Top row: Category pill + Hero Check button */}
+        <div className="flex items-center justify-between gap-1 shrink-0">
+          <span className={`font-mono text-[0.625rem] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${
+            task.cat === 'focus' ? 'bg-violet-dim text-violet border border-violet/20' :
+            task.cat === 'fire' ? 'bg-amber-dim text-amber border border-amber/20' :
+            'bg-teal-dim text-teal border border-teal/20'
+          }`}>
+            {task.cat === 'focus' ? 'FOCUS' : task.cat === 'fire' ? 'URGENT' : 'ADMIN'}
+          </span>
+          <button
+            type="button"
+            className={`w-6 h-6 rounded-full border border-line flex items-center justify-center transition-all ${
+              task.completed || isChecking
+                ? 'bg-teal text-void border-teal'
+                : 'bg-elevated/70 text-muted hover:text-text hover:border-faint'
+            }`}
+            title="Mark Done"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleHeroCheck();
+            }}
+            aria-label="Mark task done"
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Middle: Title */}
+        <div className="my-auto py-1">
+          <h4 className="font-display font-semibold text-[0.88rem] leading-snug tracking-[-0.015em] text-text line-clamp-3 m-0 break-words">
+            {task.title}
+          </h4>
+        </div>
+
+        {/* Bottom meta row */}
+        <div className="flex items-center justify-between text-[0.68rem] font-mono text-muted pt-1.5 border-t border-line/40 shrink-0 gap-1">
+          {totalSubtasks > 0 ? (
+            <span className="flex items-center gap-1 text-teal font-medium">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              <span>{doneSubtasks}/{totalSubtasks}</span>
+            </span>
+          ) : task.timer ? (
+            <span className="text-violet font-semibold">⏱ {Math.floor((task.timer.remaining || 1500) / 60)}m</span>
+          ) : task.tags && task.tags.length > 0 ? (
+            <span className="text-faint truncate max-w-[80px]">#{task.tags[0]}</span>
+          ) : (
+            <span className="text-faint">⚡ 1 block</span>
+          )}
+
+          <span className="text-[0.65rem] text-faint hover:text-text transition-colors">Tap ↗</span>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <GlowCard
       ref={combinedRef}
@@ -460,8 +569,8 @@ export const Tile: React.FC<{ task: Task; isBeingDragged?: boolean; isDragTarget
       data-lenis-prevent="true"
       data-task-id={task.id}
       glowColor={glowColorMap[task.cat as keyof typeof glowColorMap] || 'blue'}
-      className={`bg-surface/95 shadow-tile overflow-hidden flex flex-col transition-[background,box-shadow,opacity,filter,transform] duration-200 min-h-0 relative ${catClass} ${
-        isMicro ? 'p-3' : isLarge ? 'p-4' : 'p-3.5'
+      className={`bg-surface/95 shadow-tile overflow-hidden flex flex-col transition-[background,box-shadow,opacity,filter,transform] duration-200 min-h-0 relative col-span-1 row-span-1 min-h-[155px] md:min-h-0 ${catClass} ${
+        isMicro ? 'md:p-3' : isLarge ? 'md:p-4' : 'md:p-3.5'
       } ${
         isTagSpotlightActive && matchesTag ? '!opacity-100 ring-2 ring-violet shadow-[0_0_24px_rgba(155,140,255,0.45)]' : ''
       } ${
@@ -475,8 +584,8 @@ export const Tile: React.FC<{ task: Task; isBeingDragged?: boolean; isDragTarget
       } ${isCompleting ? 'animate-completePop' : ''} ${isEntering ? 'animate-tileIn' : ''} ${
         isHovered && !task.parked && !isBeingDragged ? 'bg-elevated/40' : ''
       } ${
-        isSlimWide ? 'border-l-[3px] border-l-teal/40' : ''
-      } ${isLarge ? 'ring-1 ring-violet/15' : ''}`}
+        isSlimWide ? 'md:border-l-[3px] md:border-l-teal/40' : ''
+      } ${isLarge ? 'md:ring-1 md:ring-violet/15' : ''}`}
       style={style}
       onMouseEnter={() => !isBeingDragged && setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -488,45 +597,54 @@ export const Tile: React.FC<{ task: Task; isBeingDragged?: boolean; isDragTarget
           <span>⇋ Drop to Swap</span>
         </div>
       )}
-      {task.completed ? (
-        <TileCompleted task={task} onUndo={handleHeroCheck} onArchive={handleArchive} />
-      ) : isMicro ? (
-        <div className="flex flex-col h-full items-center relative min-h-0">
-          <div className="absolute top-0 right-0 z-10">{actionBar}</div>
-          <div className="flex-1 flex flex-col items-center justify-center gap-2.5 w-full px-1 pt-1 min-h-0">
-            <button
-              type="button"
-              className={`hero-check ${isChecking ? 'is-checking' : ''}`}
-              title="Mark task as Done"
-              onClick={handleHeroCheck}
-              aria-label={`Mark ${task.title} as done`}
-            >
-              <span className="hero-check__burst" />
-              <svg className="hero-check__mark" viewBox="0 0 24 24" aria-hidden>
-                <path d="M5 13l4 4L19 7" />
-              </svg>
-            </button>
-            <div className="w-full px-0.5">{titleBlock(true)}</div>
-          </div>
-          {footer}
-        </div>
-      ) : (
-        <>
-          <div className="flex items-start justify-between gap-3 shrink-0">
-            <div className="flex-1 min-w-0 pr-1">{titleBlock(false)}</div>
-            {actionBar}
-          </div>
-          <div className={`flex-1 min-h-0 flex flex-col ${isSlimWide ? 'mt-1.5' : 'mt-3'}`}>
-            <TileContent task={task} />
-          </div>
-          {footer}
-        </>
-      )}
 
-      {/* Corner drag-resize handle */}
+      {/* Mobile-dedicated Render (< 768px): clean square widget */}
+      <div className="block md:hidden h-full">
+        {renderMobileTile()}
+      </div>
+
+      {/* Desktop-dedicated Render (>= 768px): rich multi-cell layout */}
+      <div className="hidden md:flex flex-col h-full min-h-0">
+        {task.completed ? (
+          <TileCompleted task={task} onUndo={handleHeroCheck} onArchive={handleArchive} />
+        ) : isMicro ? (
+          <div className="flex flex-col h-full items-center relative min-h-0">
+            <div className="absolute top-0 right-0 z-10">{actionBar}</div>
+            <div className="flex-1 flex flex-col items-center justify-center gap-2.5 w-full px-1 pt-1 min-h-0">
+              <button
+                type="button"
+                className={`hero-check ${isChecking ? 'is-checking' : ''}`}
+                title="Mark task as Done"
+                onClick={handleHeroCheck}
+                aria-label={`Mark ${task.title} as done`}
+              >
+                <span className="hero-check__burst" />
+                <svg className="hero-check__mark" viewBox="0 0 24 24" aria-hidden>
+                  <path d="M5 13l4 4L19 7" />
+                </svg>
+              </button>
+              <div className="w-full px-0.5">{titleBlock(true)}</div>
+            </div>
+            {footer}
+          </div>
+        ) : (
+          <>
+            <div className="flex items-start justify-between gap-3 shrink-0">
+              <div className="flex-1 min-w-0 pr-1">{titleBlock(false)}</div>
+              {actionBar}
+            </div>
+            <div className={`flex-1 min-h-0 flex flex-col ${isSlimWide ? 'mt-1.5' : 'mt-2.5'}`}>
+              <TileContent task={task} />
+            </div>
+            {footer}
+          </>
+        )}
+      </div>
+
+      {/* Corner drag-resize handle: hidden on mobile */}
       {!task.isPen && (
         <div
-          className={`tile-resize-handle ${isHovered || isDraggingResize ? 'opacity-60' : ''} ${isDraggingResize ? 'is-active' : ''}`}
+          className={`tile-resize-handle hidden md:flex ${isHovered || isDraggingResize ? 'opacity-60' : ''} ${isDraggingResize ? 'is-active' : ''}`}
           onPointerDown={handleResizePointerDown}
           onPointerMove={handleResizePointerMove}
           onPointerUp={handleResizePointerUp}

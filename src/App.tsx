@@ -116,7 +116,7 @@ function App() {
           </button>
         </div>
       )}
-      <section className="h-screen w-full flex flex-col shrink-0 relative z-10 bg-void">
+      <section className="min-h-screen md:h-screen w-full flex flex-col shrink-0 relative z-10 bg-void">
         <Header
           onNewTask={() => setIsModalOpen(true)}
           onDefrag={() => setIsDefragging(true)}

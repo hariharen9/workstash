@@ -287,26 +287,26 @@ export const NewTaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
         data-lenis-prevent="true"
       >
         {/* Header Bar */}
-        <div className="flex items-center justify-between gap-4 px-6 py-4 border-b border-line/70 shrink-0 bg-surface/50 backdrop-blur-sm">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 px-4 sm:px-6 py-3.5 sm:py-4 border-b border-line/70 shrink-0 bg-surface/50 backdrop-blur-sm">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
             <div className="w-8 h-8 rounded-xl bg-violet-dim border border-violet/30 flex items-center justify-center text-violet shadow-brand shrink-0">
               <Zap size={16} />
             </div>
-            <div>
-              <h2 className="font-display font-semibold text-[1.15rem] leading-none m-0 text-text tracking-[-0.02em]">
-                {activeTab === 'standard' ? 'Create Spatial Block' : 'Schedule Recurring Rhythm'}
+            <div className="min-w-0">
+              <h2 className="font-display font-semibold text-[1rem] sm:text-[1.15rem] leading-none m-0 text-text tracking-[-0.02em] truncate">
+                {activeTab === 'standard' ? 'Create Spatial Block' : 'Schedule Rhythm'}
               </h2>
-              <p className="text-[0.72rem] text-muted m-0 mt-1 font-medium">
-                {activeTab === 'standard' ? 'Physical task allocated on finite grid' : 'Off-grid routine scheduled to trigger automatically'}
+              <p className="text-[0.68rem] sm:text-[0.72rem] text-muted m-0 mt-1 font-medium truncate">
+                {activeTab === 'standard' ? 'Physical task allocated on finite grid' : 'Off-grid routine scheduled to trigger'}
               </p>
             </div>
           </div>
 
           {/* Mode Switcher Pills */}
-          <div className="flex items-center gap-1 bg-elevated p-1 rounded-xl border border-line/80 shrink-0">
+          <div className="flex items-center gap-1 bg-elevated p-1 rounded-xl border border-line/80 shrink-0 order-3 sm:order-2">
             <button
               type="button"
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.78rem] font-semibold transition-all cursor-pointer border-none ${
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-[0.75rem] sm:text-[0.78rem] font-semibold transition-all cursor-pointer border-none ${
                 activeTab === 'standard'
                   ? 'bg-elevated-hi text-text shadow-sm'
                   : 'bg-transparent text-muted hover:text-text'
@@ -314,11 +314,11 @@ export const NewTaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
               onClick={() => setActiveTab('standard')}
             >
               <Zap size={13} />
-              <span>Standard Block</span>
+              <span>Standard</span>
             </button>
             <button
               type="button"
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.78rem] font-semibold transition-all cursor-pointer border-none ${
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-[0.75rem] sm:text-[0.78rem] font-semibold transition-all cursor-pointer border-none ${
                 activeTab === 'recurring'
                   ? 'bg-elevated-hi text-text shadow-sm'
                   : 'bg-transparent text-muted hover:text-text'
@@ -326,13 +326,13 @@ export const NewTaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
               onClick={() => setActiveTab('recurring')}
             >
               <Repeat size={13} />
-              <span>Recurring Rhythm</span>
+              <span>Recurring</span>
             </button>
           </div>
 
           <button
             type="button"
-            className="tile-action !w-8 !h-8 text-muted hover:text-text !rounded-lg"
+            className="tile-action !w-8 !h-8 text-muted hover:text-text !rounded-lg order-2 sm:order-3 ml-auto sm:ml-0"
             onClick={onClose}
             aria-label="Close"
           >
@@ -342,7 +342,7 @@ export const NewTaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
 
         {/* Modal Body: 2-Column Responsive Layout */}
         <div
-          className="flex-1 overflow-y-auto tile-scroll p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0"
+          className="flex-1 overflow-y-auto tile-scroll p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 min-h-0"
           data-lenis-prevent="true"
         >
           {/* Left Column: Core Setup (7 cols on desktop) */}
