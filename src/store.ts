@@ -33,7 +33,7 @@ export interface ActivityLog {
   id: string;
   time: string;
   msg: string;
-  type: 'focus' | 'rest' | 'fire' | 'admin' | 'system';
+  type: 'focus' | 'fire' | 'admin' | 'system';
 }
 
 /** One completed focus session (pomodoro), used for analytics. */
@@ -54,7 +54,6 @@ export interface Task {
   h: number;
   naturalW: number;
   naturalH: number;
-  type: string;
   notes?: string;
   subtasks?: Subtask[];
   timer?: { total: number; remaining: number; running: boolean };
@@ -117,18 +116,17 @@ interface AppState {
   setGridLayout: (layout: GridLayout) => void;
   logActivity: (msg: string, type: ActivityLog['type']) => void;
 
-  addTile: (title: string, cat: TaskCategory, w: number, h: number) => void;
-  addRecurringTile: (title: string, cat: TaskCategory, w: number, h: number, recurrence: Recurrence) => void;
+  addTile: (title: string, cat: TaskCategory, w?: number, h?: number, options?: { notes?: string; subtasks?: string[]; timerSeconds?: number; energy?: number }) => void;
+  addRecurringTile: (title: string, cat: TaskCategory, w?: number, h?: number, recurrence?: Recurrence, options?: { notes?: string; subtasks?: string[]; timerSeconds?: number; energy?: number }) => void;
   updateTitle: (id: string, title: string) => void;
   updateCategory: (id: string, cat: TaskCategory) => void;
   updateRecurrence: (id: string, recurrence: Recurrence) => void;
   archiveTask: (id: string) => void;
   toggleCompleteTask: (id: string) => void;
   restoreTask: (id: string) => void;
-  refreshRecurringTasks: () => void;
   snoozeTask: (id: string, hours: number) => void;
-  completeTaskNow: (id: string) => void;
-  wakeRecurringTask: (id: string) => void;
+  promoteRecurringTask: (id: string) => void;
+  deleteRecurringTask: (id: string) => void;
   changeTopology: (mode: TopologyMode) => void;
   openShutter: (id: string) => void;
   closeShutter: () => void;
@@ -391,34 +389,34 @@ function applyTopology(tasks: Task[], mode: TopologyMode, focusedTaskId: string 
 function createSeedTasks(): Task[] {
   return [
     // 3×2 — split-pane deep focus workspace
-    { id: uid(), title: 'Design token audit for WorkStash', cat: 'focus', w: 3, h: 2, naturalW: 3, naturalH: 2, type: 'deep',
+    { id: uid(), title: 'Design token audit for WorkStash', cat: 'focus', w: 3, h: 2, naturalW: 3, naturalH: 2,
       notes: '// reconcile elevated vs elevated-hi\n// check contrast on amber badges', subtasks: [
         { id: uid(), text: 'Pull palette into CSS vars', done: true },
         { id: uid(), text: 'Recheck focus ring contrast', done: false },
       ], timer: { total: 1500, remaining: 1500, running: false }, energy: 3, completed: false, tab: 'notes' },
     // 2×2 — tabbed urgent workspace
-    { id: uid(), title: 'Prod error spike — /checkout 500s', cat: 'fire', w: 2, h: 2, naturalW: 2, naturalH: 2, type: 'focus',
+    { id: uid(), title: 'Prod error spike — /checkout 500s', cat: 'fire', w: 2, h: 2, naturalW: 2, naturalH: 2,
       notes: 'TypeError: Cannot read properties of undefined\n  at validateCart (checkout.ts:88)', subtasks: [
         { id: uid(), text: 'Reproduce locally', done: false },
         { id: uid(), text: 'Check deploy logs', done: false },
       ], timer: { total: 900, remaining: 900, running: false }, energy: 4, completed: false, tab: 'notes' },
     // 3×1 — slim wide checklist strip
-    { id: uid(), title: 'Sprint planning prep', cat: 'focus', w: 3, h: 1, naturalW: 3, naturalH: 1, type: 'standard',
+    { id: uid(), title: 'Sprint planning prep', cat: 'focus', w: 3, h: 1, naturalW: 3, naturalH: 1,
       notes: '', subtasks: [
         { id: uid(), text: 'Review backlog items', done: false },
         { id: uid(), text: 'Estimate story points', done: false },
         { id: uid(), text: 'Draft sprint goal', done: false },
       ], energy: 2, completed: false },
     // 1×2 — tall narrow column
-    { id: uid(), title: 'Review PR #482', cat: 'focus', w: 1, h: 2, naturalW: 1, naturalH: 2, type: 'standard',
+    { id: uid(), title: 'Review PR #482', cat: 'focus', w: 1, h: 2, naturalW: 1, naturalH: 2,
       notes: '', subtasks: [
         { id: uid(), text: 'Check migration rollback', done: false },
         { id: uid(), text: 'Test edge cases', done: false },
       ], energy: 2, completed: false },
-    { id: uid(), title: 'Approve expense report', cat: 'admin', w: 1, h: 1, naturalW: 1, naturalH: 1, type: 'admin', completed: false },
-    { id: uid(), title: 'Reply: vendor contract q\'s', cat: 'admin', w: 1, h: 1, naturalW: 1, naturalH: 1, type: 'admin', completed: false },
-    { id: uid(), title: 'Book flight for offsite', cat: 'admin', w: 1, h: 1, naturalW: 1, naturalH: 1, type: 'admin', completed: false },
-    { id: uid(), title: 'Holding Pen', cat: 'pen', w: 2, h: 1, naturalW: 2, naturalH: 1, type: 'pen', isPen: true, items: ['Slack: check w/ Dana re: staging creds'], completed: false },
+    { id: uid(), title: 'Approve expense report', cat: 'admin', w: 1, h: 1, naturalW: 1, naturalH: 1, completed: false },
+    { id: uid(), title: 'Reply: vendor contract q\'s', cat: 'admin', w: 1, h: 1, naturalW: 1, naturalH: 1, completed: false },
+    { id: uid(), title: 'Book flight for offsite', cat: 'admin', w: 1, h: 1, naturalW: 1, naturalH: 1, completed: false },
+    { id: uid(), title: 'Holding Pen', cat: 'pen', w: 2, h: 1, naturalW: 2, naturalH: 1, isPen: true, items: ['Slack: check w/ Dana re: staging creds'], completed: false },
   ];
 }
 
@@ -431,7 +429,6 @@ export function buildEmptyWorkspace(): PersistedWorkspace {
     h: 1,
     naturalW: 2,
     naturalH: 1,
-    type: 'pen',
     isPen: true,
     items: [],
     completed: false,
@@ -467,18 +464,18 @@ export function serializeWorkspaceState(state: {
   notificationPermission: NotificationPermission;
 }): PersistedWorkspace {
   return {
-    mode: state.mode,
-    focusedTaskId: state.focusedTaskId,
-    tasks: state.tasks.map(t =>
+    mode: state.mode || 'normal',
+    focusedTaskId: state.focusedTaskId ?? null,
+    tasks: (state.tasks || []).map(t =>
       t.timer?.running
         ? { ...t, timer: { ...t.timer, running: false } }
         : t
     ),
-    activityLogs: state.activityLogs.slice(0, 100),
-    focusSessions: state.focusSessions.slice(0, 500),
-    gridLayout: state.gridLayout,
-    morningIntentDate: state.morningIntentDate,
-    notificationPermission: state.notificationPermission,
+    activityLogs: (state.activityLogs || []).slice(0, 100),
+    focusSessions: (state.focusSessions || []).slice(0, 500),
+    gridLayout: state.gridLayout || '6x4',
+    morningIntentDate: state.morningIntentDate ?? null,
+    notificationPermission: state.notificationPermission || 'default',
   };
 }
 
@@ -604,27 +601,50 @@ export const useStore = create<AppState>()(
         toasts: state.toasts.filter(t => t.id !== id)
       })),
 
-      addTile: (title, cat, w = 2, h = 1) => set((state) => {
+      addTile: (title, cat, w = 2, h = 1, options) => set((state) => {
         get().pushSnapshot();
+        const timerTotal = options?.timerSeconds ?? 1500;
+        const initialSubtasks = (options?.subtasks || []).filter(s => s.trim()).map(text => ({
+          id: uid(),
+          text: text.trim(),
+          done: false
+        }));
         const newTask: Task = {
-          id: uid(), title, cat, w, h, naturalW: w, naturalH: h, type: 'task',
-          notes: '', subtasks: [], timer: { total: 1500, remaining: 1500, running: false },
-          energy: 3, completed: false, tab: 'notes'
+          id: uid(), title, cat, w, h, naturalW: w, naturalH: h,
+          notes: options?.notes ?? '',
+          subtasks: initialSubtasks,
+          timer: { total: timerTotal, remaining: timerTotal, running: false },
+          energy: options?.energy ?? (cat === 'admin' ? 1 : cat === 'fire' ? 4 : 3),
+          completed: false,
+          tab: 'notes'
         };
         setTimeout(() => get().logActivity(`Created "${title}"`, cat === 'focus' ? 'focus' : cat === 'fire' ? 'fire' : 'admin'), 0);
         return { tasks: [...state.tasks, newTask] };
       }),
 
-      addRecurringTile: (title, cat, w = 1, h = 1, recurrence) => set((state) => {
+      addRecurringTile: (title, cat, w = 1, h = 1, recurrence = defaultRecurrence(), options) => set((state) => {
         get().pushSnapshot();
         const due = nextOccurrence(recurrence);
+        const timerTotal = options?.timerSeconds ?? 1500;
+        const initialSubtasks = (options?.subtasks || []).filter(s => s.trim()).map(text => ({
+          id: uid(),
+          text: text.trim(),
+          done: false
+        }));
         const newTask: Task = {
-          id: uid(), title, cat, w, h, naturalW: w, naturalH: h, type: 'task',
-          notes: '', subtasks: [], timer: { total: 1500, remaining: 1500, running: false },
-          energy: cat === 'admin' ? 1 : 2, completed: false, tab: 'notes',
-          recurrence, nextDue: due ? isoLocal(due) : null,
+          id: uid(), title, cat, w, h, naturalW: w, naturalH: h,
+          notes: options?.notes ?? '',
+          subtasks: initialSubtasks,
+          timer: { total: timerTotal, remaining: timerTotal, running: false },
+          energy: options?.energy ?? (cat === 'admin' ? 1 : 2),
+          completed: false,
+          tab: 'notes',
+          recurrence,
+          nextDue: due ? isoLocal(due) : null,
           dueDate: due ? isoLocal(due) : null,
-          lastCompleted: null, completionDates: [], dormant: true,
+          lastCompleted: null,
+          completionDates: [],
+          dormant: true,
         };
         setTimeout(() => get().logActivity(`Created recurring task "${title}" — ${recurrenceLabel(recurrence)}`, 'system'), 0);
         return { tasks: [...state.tasks, newTask] };
@@ -669,92 +689,73 @@ export const useStore = create<AppState>()(
         get().logActivity(`Snoozed "${task.title}"`, 'system');
       },
 
-      completeTaskNow: (id) => {
+      promoteRecurringTask: (id) => {
         const task = get().tasks.find(t => t.id === id);
-        if (!task) return;
-        get().pushSnapshot();
+        if (!task?.recurrence) return;
 
-        if (task.recurrence) {
-          const now = new Date();
-          const due = nextOccurrence(task.recurrence, now);
-          const today = todayKey();
-          const completionDates = Array.from(new Set([...(task.completionDates || []), today]));
-          const newStreak = streakForTask({ ...task, completionDates });
-          set((state) => ({
-            tasks: state.tasks.map(t => t.id === id ? {
-              ...t,
-              completed: false,
-              archived: false,
-              dormant: true,
-              lastCompleted: today,
-              completionDates,
-              dueDate: due ? isoLocal(due) : null,
-              nextDue: due ? isoLocal(due) : null,
-              timer: t.timer ? { ...t.timer, running: false } : t.timer,
-            } : t)
-          }));
-          get().addToast(`✓ "${task.title}" — next ${task.recurrence.time ? `at ${formatRecurrenceTime(task.recurrence.time)}` : 'occurrence'}. Streak ${newStreak} 🔥`, '⟳');
-          get().logActivity(`Completed recurring "${task.title}"`, task.cat === 'focus' ? 'focus' : task.cat === 'fire' ? 'fire' : 'admin');
-          return;
+        const total = get().gridLayout === '8x4' ? 32 : get().gridLayout === '6x5' ? 30 : 24;
+        const used = occupiedCells(get().tasks);
+        let w = task.naturalW;
+        let h = task.naturalH;
+
+        if (used + w * h > total) {
+          if (used + 1 > total) {
+            get().addToast('Grid is full — free a cell first', '⚠');
+            return;
+          }
+          w = 1;
+          h = 1;
         }
 
-        // Non-recurring: standard complete
-        get().logActivity(`Completed "${task.title}"`, task.cat === 'focus' ? 'focus' : task.cat === 'fire' ? 'fire' : 'admin');
+        get().pushSnapshot();
+        const due = nextOccurrence(task.recurrence, new Date());
+        const today = todayKey();
+        const completionDates = Array.from(new Set([...(task.completionDates || []), today]));
+
+        const oneOff: Task = {
+          ...task,
+          id: uid(),
+          w,
+          h,
+          naturalW: w,
+          naturalH: h,
+          recurrence: null,
+          nextDue: null,
+          dueDate: null,
+          lastCompleted: null,
+          completionDates: [],
+          dormant: false,
+          completed: false,
+          archived: false,
+          timer: task.timer ? { ...task.timer, running: false } : task.timer,
+        };
+
         set((state) => ({
-          tasks: state.tasks.map(t => t.id === id ? {
-            ...t,
-            completed: true,
-            w: 1,
-            h: 1,
-            timer: t.timer ? { ...t.timer, running: false } : t.timer
-          } : t)
+          tasks: [
+            ...state.tasks.map(t => t.id === id ? {
+              ...t,
+              dormant: true,
+              completed: false,
+              archived: false,
+              lastCompleted: today,
+              completionDates,
+              nextDue: due ? isoLocal(due) : null,
+              dueDate: due ? isoLocal(due) : null,
+            } : t),
+            oneOff,
+          ]
         }));
+        get().addToast(`"${task.title}" moved to the grid for today`, '⟳');
+        get().logActivity(`Promoted recurring "${task.title}" to grid`, 'system');
       },
 
-      wakeRecurringTask: (id) => {
+      deleteRecurringTask: (id) => {
         const task = get().tasks.find(t => t.id === id);
         if (!task?.recurrence) return;
         get().pushSnapshot();
-        set((state) => ({
-          tasks: state.tasks.map(t => t.id === id ? {
-            ...t,
-            dormant: false,
-            completed: false,
-            archived: false,
-            w: t.naturalW,
-            h: t.naturalH,
-          } : t)
-        }));
-        get().addToast(`"${task.title}" brought onto the grid now`, '⟳');
-      },
-
-      refreshRecurringTasks: () => {
-        const state = get();
-        const now = new Date();
-        let changed = false;
-        const nextTasks = state.tasks.map(t => {
-          if (!t.recurrence || t.completed || t.archived) return t;
-
-          const dueDate = t.dueDate ? parseIsoLocal(t.dueDate) : null;
-          const nextDue = t.nextDue ? parseIsoLocal(t.nextDue) : null;
-          const isDue = (dueDate && dueDate.getTime() <= now.getTime())
-            || (nextDue && nextDue.getTime() <= now.getTime());
-
-          if (t.dormant && isDue) {
-            changed = true;
-            return {
-              ...t,
-              dormant: false,
-              completed: false,
-              archived: false,
-              w: t.naturalW,
-              h: t.naturalH,
-            };
-          }
-          return t;
-        });
-
-        if (changed) set({ tasks: nextTasks });
+        set((state) => ({ tasks: state.tasks.filter(t => t.id !== id) }));
+        get().addToast(`Removed recurring "${task.title}"`, '✕');
+        get().logActivity(`Removed recurring "${task.title}"`, 'system');
       },
 
       updateTitle: (id, title) => {
@@ -791,11 +792,6 @@ export const useStore = create<AppState>()(
       toggleCompleteTask: (id) => {
         const task = get().tasks.find(t => t.id === id);
         if (!task) return;
-
-        if (task.recurrence && !task.completed) {
-          get().completeTaskNow(id);
-          return;
-        }
 
         get().pushSnapshot();
         const nextCompleted = !task.completed;

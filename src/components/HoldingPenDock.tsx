@@ -6,7 +6,7 @@ export const HoldingPenDock: React.FC = () => {
   const { tasks, gridLayout, addPenItem, removePenItem, promotePenItem } = useStore();
   const pen = tasks.find(t => t.isPen && !t.completed);
   const inputRef = useRef<HTMLInputElement>(null);
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   const TOTAL_CELLS = gridLayout === '8x4' ? 32 : gridLayout === '6x5' ? 30 : 24;
   const used = occupiedCells(tasks);
@@ -65,7 +65,13 @@ export const HoldingPenDock: React.FC = () => {
               items.map((item, i) => (
                 <div
                   key={`${item}-${i}`}
-                  className="flex items-center gap-2 shrink-0 max-w-[280px] bg-elevated border border-line rounded-xl px-3 py-2"
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('application/x-workstash-pen', JSON.stringify({ penId: pen.id, index: i }));
+                    e.dataTransfer.effectAllowed = 'move';
+                  }}
+                  className="flex items-center gap-2 shrink-0 max-w-[280px] bg-elevated border border-line rounded-xl px-3 py-2 cursor-grab active:cursor-grabbing hover:border-faint transition-colors"
+                  title="Drag onto the grid to promote"
                 >
                   <span className="font-mono text-[0.65rem] text-faint">{String(i + 1).padStart(2, '0')}</span>
                   <span className="text-[0.8125rem] text-text truncate flex-1 min-w-0">{item}</span>

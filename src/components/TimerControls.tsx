@@ -24,6 +24,7 @@ interface TimerControlsProps {
 export const TimerControls: React.FC<TimerControlsProps> = ({ task, compact = false, minimal = false }) => {
   const { setTimerRunning, resetTimer, adjustTimer, setTimerDuration } = useStore();
   const [isExpanded, setIsExpanded] = useState(false);
+  const [customMinutes, setCustomMinutes] = useState(String(Math.round((task.timer?.total ?? 1500) / 60)));
 
   const timer = task.timer;
   if (!timer) return null;
@@ -167,6 +168,36 @@ export const TimerControls: React.FC<TimerControlsProps> = ({ task, compact = fa
                   <button type="button" className="tile-chip !px-2 !py-1 !text-[0.72rem]" onClick={() => adjustTimer(task.id, -300)} title="-5 minutes">−5m</button>
                   <button type="button" className="tile-chip !px-2 !py-1 !text-[0.72rem]" onClick={() => adjustTimer(task.id, 300)} title="+5 minutes">+5m</button>
                 </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 mt-1">
+                <input
+                  type="number"
+                  min={1}
+                  max={120}
+                  className="tile-field !py-1 !px-2 !text-[0.75rem] !w-20"
+                  value={customMinutes}
+                  onChange={(e) => setCustomMinutes(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const mins = Math.min(120, Math.max(1, Number(customMinutes) || 25));
+                      setTimerDuration(task.id, mins * 60);
+                      setCustomMinutes(String(mins));
+                    }
+                  }}
+                />
+                <span className="text-[0.7rem] text-muted">min</span>
+                <button
+                  type="button"
+                  className="tile-chip !px-2 !py-1 !text-[0.72rem] !bg-violet !border-violet/40 !text-void"
+                  onClick={() => {
+                    const mins = Math.min(120, Math.max(1, Number(customMinutes) || 25));
+                    setTimerDuration(task.id, mins * 60);
+                    setCustomMinutes(String(mins));
+                  }}
+                >
+                  Set
+                </button>
               </div>
             </div>
           </div>

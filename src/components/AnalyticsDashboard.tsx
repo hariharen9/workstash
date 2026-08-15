@@ -180,6 +180,41 @@ function timerStarted(t: { timer?: { remaining: number; total: number } }) {
   return !!t.timer && t.timer.remaining < t.timer.total;
 }
 
+const SessionHistory = () => {
+  const focusSessions = useStore(s => s.focusSessions);
+  const sessions = useMemo(
+    () => [...focusSessions].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0)).slice(0, 20),
+    [focusSessions]
+  );
+
+  return (
+    <div className="flex flex-col gap-2">
+      <h3 className="text-xs font-mono tracking-widest text-muted uppercase">Session History</h3>
+      <GlowCard
+        customSize
+        glowColor="green"
+        className="p-5 bg-surface rounded-2xl flex flex-col gap-5 h-48 overflow-y-auto"
+        data-lenis-prevent="true"
+      >
+        {sessions.length === 0 ? (
+          <div className="text-muted text-sm italic">No focus sessions recorded yet.</div>
+        ) : (
+          sessions.map(s => (
+            <div key={s.id} className="flex items-center gap-4 text-sm">
+              <div className="w-24 text-muted font-mono text-[11px] shrink-0">{s.date}</div>
+              <div className="flex flex-col min-w-0 flex-1">
+                <span className="text-text truncate">{s.taskTitle}</span>
+                <span className="text-faint text-[11px] font-mono">{Math.round(s.durationSeconds / 60)} min</span>
+              </div>
+              <span className={`w-2 h-2 rounded-full shrink-0 ${s.cat === 'focus' ? 'bg-violet' : s.cat === 'fire' ? 'bg-amber' : 'bg-teal'}`} />
+            </div>
+          ))
+        )}
+      </GlowCard>
+    </div>
+  );
+};
+
 const ActivityLog = () => {
   const { activityLogs } = useStore();
 
@@ -198,7 +233,6 @@ const ActivityLog = () => {
           if (log.type === 'focus') dot = 'bg-violet shadow-brand';
           if (log.type === 'fire') dot = 'bg-amber';
           if (log.type === 'admin') dot = 'bg-teal';
-          if (log.type === 'rest') dot = 'bg-blue-400';
 
           return (
             <div key={log.id} className="flex items-start gap-4 text-sm">
@@ -230,6 +264,7 @@ export const AnalyticsDashboard: React.FC = () => {
           <EnergyChart />
           <PomodoroWidget />
           <ActivityLog />
+          <SessionHistory />
         </div>
       </div>
     </section>

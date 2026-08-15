@@ -27,17 +27,15 @@ export const CommandPalette: React.FC = () => {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
 
-  const allTasks = useMemo(() => tasks, [tasks]);
+  const allTasks = tasks.filter(t => !t.isPen);
 
   const matches = useMemo(() => {
     if (!query.trim()) {
-      return allTasks.filter(t => !t.isPen).map(t => ({ task: t, score: 1 }));
+      return allTasks.map(t => ({ task: t, score: 1 }));
     }
     const results: Match[] = [];
     for (const task of allTasks) {
-      if (task.isPen) continue;
       const titleScore = fuzzyScore(query, task.title);
       const catScore = fuzzyScore(query, task.cat === 'focus' ? 'deep focus' : task.cat === 'fire' ? 'urgent' : 'admin');
       const best = Math.max(titleScore, catScore);
@@ -103,7 +101,6 @@ export const CommandPalette: React.FC = () => {
         onClick={() => setIsOpen(false)}
       />
       <div
-        ref={containerRef}
         className="fixed top-[18%] left-1/2 -translate-x-1/2 z-[81] w-full max-w-[560px] bg-elevated-hi border border-line rounded-2xl shadow-shutter flex flex-col overflow-hidden animate-toastIn"
         onClick={(e) => e.stopPropagation()}
       >

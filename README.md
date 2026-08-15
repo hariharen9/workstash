@@ -135,7 +135,7 @@ Start a focus session and a floating widget appears bottom-left — always visib
 | **Timer widget** | Floating active-timer indicator with pulse animation |
 | **Drag to reorder** | Rearrange tiles spatially by dragging |
 | **Smooth scroll** | Lenis-powered buttery scroll from workspace → analytics |
-| **Persistence** | Everything saved automatically, on-device, no account needed |
+| **Persistence** | Signed-in cloud sync via Firebase Auth + Firestore, with a local offline cache |
 
 ---
 
@@ -180,6 +180,7 @@ Open the URL Vite prints (usually `http://localhost:5173`).
 | Build | Vite |
 | Styling | Tailwind CSS v4 (utility-first, custom design tokens) |
 | State | Zustand with `persist` middleware |
+| Auth & sync | Firebase Auth (Google + email/password) + Firestore |
 | Drag & drop | `@dnd-kit` (sortable + pointer sensor) |
 | Smooth scroll | `@studio-freight/lenis` |
 | Animations | `@formkit/auto-animate` + custom CSS keyframes |
@@ -190,8 +191,10 @@ Open the URL Vite prints (usually `http://localhost:5173`).
 
 ```
 src/
-  store.ts                   # All domain state, actions, persistence, analytics helpers
+  store.ts                   # Domain state, recurrence engine, analytics, persistence
   App.tsx                    # App shell, scroll, modals, global layout
+  firebase.ts                # Firebase app, auth, Firestore init
+  auth.tsx                   # Auth provider + debounced cloud sync
   index.css                  # Design tokens, Tailwind theme, global styles
   components/
     BentoGrid.tsx            # Main grid + drag-and-drop orchestration
@@ -204,10 +207,15 @@ src/
     HoldingPenDock.tsx       # Off-grid inbox dock
     AnalyticsDashboard.tsx   # Heatmap, energy allocation, session history
     ArchiveModal.tsx         # Browse and restore archived blocks
-    NewTaskModal.tsx         # Create task flow
+    RhythmModal.tsx          # Recurring task schedules (off-grid)
+    RecurrenceEditModal.tsx  # Edit a recurring rhythm
+    NewTaskModal.tsx         # Create task flow (incl. recurring)
     DefragOverlay.tsx        # Animated defrag ritual
     HelpModal.tsx            # Onboarding + quick reference
     SettingsModal.tsx        # Grid layout, workspace reset
+    LoginScreen.tsx          # Google + email/password sign-in
+    CommandPalette.tsx       # Ctrl+K fuzzy search
+    MorningIntent.tsx        # Daily review modal
     GlowCard.tsx             # Shared glassmorphic card primitive
 ```
 
@@ -218,7 +226,8 @@ src/
 - Timers pause on page reload — they don't run in the background.
 - Only one timer runs at a time globally.
 - Restoring an archived block checks grid capacity first — if tight, it restores at 1×1.
-- All data is stored on-device via `localStorage`. No account. No server. No telemetry.
+- Recurring tasks live off-grid in the Rhythm modal; promoting one creates a one-off grid block.
+- Data syncs to your signed-in account via Firebase (Google or email/password), with `localStorage` as an offline cache.
 
 ---
 

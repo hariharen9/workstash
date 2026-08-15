@@ -60,6 +60,9 @@ export const HelpModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ 
               <li>
                 <span className="text-text font-medium">End-of-Day Defrag</span> — a ritual to clear completed work and compact the grid.
               </li>
+              <li>
+                <span className="text-text font-medium">Rhythm (recurring tasks)</span> — daily/weekly/monthly routines live off-grid and surface as one-off blocks when you promote them.
+              </li>
             </ul>
           </section>
 
@@ -87,7 +90,8 @@ export const HelpModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ 
               <li>Hover a block and press <span className="text-text font-semibold">F</span> for Focus Shutter · <span className="text-text font-semibold">Esc</span> to exit</li>
               <li>In Solo Focus mode, double-click a tile to make it the active focus</li>
               <li>Promote Holding Pen items with <span className="text-text font-semibold">↗</span> onto the grid</li>
-              <li>Your workspace saves automatically in this browser</li>
+              <li>Recurring routines are in the <span className="text-text font-semibold">Rhythm</span> menu in the header</li>
+              <li>Your workspace syncs to your signed-in account and keeps an offline cache in this browser</li>
             </ul>
           </section>
         </div>

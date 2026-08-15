@@ -3,7 +3,7 @@ import { useStore } from '../store';
 import { TileContent } from './TileContent';
 
 export const FocusShutter: React.FC = () => {
-  const { shutterOpen, closeShutter, tasks, isHoveringTask, updateTitle, archiveTask, addToast } = useStore();
+  const { shutterOpen, closeShutter, tasks, isHoveringTask, updateTitle, archiveTask, addToast, setEnergy } = useStore();
 
   const task = tasks.find(t => t.id === shutterOpen);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -120,6 +120,24 @@ export const FocusShutter: React.FC = () => {
             </div>
             <div className="flex-1 min-h-0 mt-5 flex flex-col">
               <TileContent task={proxyTask} disableTick />
+            </div>
+            <div className="shrink-0 mt-4 flex items-center gap-4 rounded-xl border border-line/60 bg-elevated/50 px-4 py-3">
+              <span className="text-[0.7rem] font-semibold tracking-[0.04em] uppercase text-muted shrink-0">Energy</span>
+              <div className="flex gap-1.5 items-end h-8 flex-1">
+                {[1, 2, 3, 4, 5].map(i => (
+                  <button
+                    key={i}
+                    type="button"
+                    className={`flex-1 rounded-t-md border-none cursor-pointer transition-colors duration-200 ${
+                      i <= (task.energy || 3) ? 'bg-violet' : 'bg-elevated hover:bg-elevated-hi'
+                    }`}
+                    style={{ height: `${8 + i * 4}px` }}
+                    onClick={() => setEnergy(task.id, i)}
+                    aria-label={`Set energy to ${i}`}
+                  />
+                ))}
+              </div>
+              <span className="font-mono text-[0.72rem] text-muted tabular-nums shrink-0">{task.energy || 3}/5</span>
             </div>
           </div>
         </div>

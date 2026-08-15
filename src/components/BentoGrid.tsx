@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useStore, occupiedCells } from '../store';
 import { Tile } from './Tile';
 import { HoldingPenDock } from './HoldingPenDock';
-import { RecurringDock } from './RecurringDock';
 import {
   DndContext,
   closestCenter,
@@ -18,7 +17,7 @@ import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
 import { TileContent } from './TileContent';
 
 export const BentoGrid: React.FC<{ onNewTask: () => void }> = ({ onNewTask }) => {
-  const { tasks, gridLayout, reorderTasks } = useStore();
+  const { tasks, gridLayout, reorderTasks, promotePenItem } = useStore();
 
   const TOTAL_CELLS = gridLayout === '8x4' ? 32 : gridLayout === '6x5' ? 30 : 24;
   const used = occupiedCells(tasks);
@@ -61,8 +60,28 @@ export const BentoGrid: React.FC<{ onNewTask: () => void }> = ({ onNewTask }) =>
     setOverId(null);
   };
 
+  const handlePenDrop = (e: React.DragEvent) => {
+    const raw = e.dataTransfer.getData('application/x-workstash-pen');
+    if (!raw) return;
+    try {
+      const { penId, index } = JSON.parse(raw) as { penId: string; index: number };
+      promotePenItem(penId, index);
+    } catch {
+      // Ignore malformed drag payloads from outside the app.
+    }
+  };
+
   return (
-    <div className="flex-1 flex flex-col min-h-0 relative">
+    <div
+      className="flex-1 flex flex-col min-h-0 relative"
+      onDragOver={(e) => {
+        if (e.dataTransfer.types.includes('application/x-workstash-pen')) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+        }
+      }}
+      onDrop={handlePenDrop}
+    >
       <div className="flex-1 p-[18px_22px_10px] flex flex-col min-h-0">
         <div className={`hidden items-center gap-2.5 text-[0.8125rem] text-amber font-medium mb-3 p-3 bg-amber-dim border border-amber/25 rounded-xl ${isFull ? '!flex' : ''}`}>
           <span className="font-mono text-[0.7rem] tracking-wide uppercase">Full</span>
@@ -140,7 +159,6 @@ export const BentoGrid: React.FC<{ onNewTask: () => void }> = ({ onNewTask }) =>
           </DragOverlay>
         </DndContext>
       </div>
-      <RecurringDock />
       <HoldingPenDock />
     </div>
   );

@@ -82,6 +82,11 @@ function mergeWorkspace(local: PersistedWorkspace, remote: PersistedWorkspace): 
   };
 }
 
+// Strip undefined properties recursively since Firestore rejects objects containing undefined
+function cleanForFirestore<T>(data: T): T {
+  return JSON.parse(JSON.stringify(data));
+}
+
 async function flushSave(workspaceRef: DocumentReference) {
   if (!allowSave) return;
 
@@ -100,7 +105,7 @@ async function flushSave(workspaceRef: DocumentReference) {
   }
 
   try {
-    await setDoc(workspaceRef, payload);
+    await setDoc(workspaceRef, cleanForFirestore(payload));
     statusReporter('synced', '');
   } catch (err) {
     console.error('Failed to save cloud workspace:', err);
@@ -121,7 +126,7 @@ async function connectSync(uid: string, isRetry = false) {
         // Merge offline edits with cloud instead of overwriting them.
         const merged = mergeWorkspace(getLocalWorkspace(), snap.data() as PersistedWorkspace);
         useStore.getState().hydrateCloudWorkspace(merged);
-        await setDoc(workspaceRef, merged);
+        await setDoc(workspaceRef, cleanForFirestore(merged));
       } else {
         useStore.getState().hydrateCloudWorkspace(snap.data() as PersistedWorkspace);
       }
@@ -129,12 +134,12 @@ async function connectSync(uid: string, isRetry = false) {
     } else if (isRetry && hadCloud) {
       const local = getLocalWorkspace();
       useStore.getState().hydrateCloudWorkspace(local);
-      await setDoc(workspaceRef, local);
+      await setDoc(workspaceRef, cleanForFirestore(local));
       cloudLoaded = true;
     } else {
       const empty = buildEmptyWorkspace();
       useStore.getState().hydrateCloudWorkspace(empty);
-      await setDoc(workspaceRef, empty);
+      await setDoc(workspaceRef, cleanForFirestore(empty));
       cloudLoaded = true;
     }
     statusReporter('synced', '');

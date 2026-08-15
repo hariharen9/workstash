@@ -157,6 +157,13 @@ export const ActiveTimerWidget: React.FC = () => {
     ? (catMeta[pinnedTask.cat] ?? MODE_META.focus)
     : MODE_META[mode];
 
+  // Low-time state: shift the ember to amber when the clock is running out.
+  const LOW_TIME_SECONDS = 5 * 60;
+  const isLowTime = displayRunning && displaySeconds > 0 && displaySeconds <= LOW_TIME_SECONDS;
+  const displayMeta: ModeMetaItem = isLowTime
+    ? { label: 'Almost done', short: 'Almost done', icon: Flame, c1: '#F6B03A', c2: '#F0645A', glow: '246,176,58' }
+    : activeMeta;
+
   // ── Audio ──────────────────────────────────────────────────
   const audioCtxRef = useRef<AudioContext | null>(null);
   const getCtx = () => {
@@ -317,25 +324,25 @@ export const ActiveTimerWidget: React.FC = () => {
         onClick={() => setExpanded(true)}
         aria-label="Expand pomodoro timer"
       >
-        <EmberRing size={72} stroke={5} progress={progress} meta={activeMeta} running={displayRunning} flash={flash} mini>
+        <EmberRing size={72} stroke={5} progress={progress} meta={displayMeta} running={displayRunning} flash={flash} mini>
           <span className="pomo-orb-time">{fmt(displaySeconds)}</span>
-          <activeMeta.icon size={11} className="pomo-orb-icon" style={{ color: activeMeta.c1 }} />
+          <displayMeta.icon size={11} className="pomo-orb-icon" style={{ color: displayMeta.c1 }} />
         </EmberRing>
         {displayRunning && (
-          <span className="pomo-orb-pulse" style={{ background: activeMeta.c1 }} />
+          <span className="pomo-orb-pulse" style={{ background: displayMeta.c1 }} />
         )}
       </button>
 
       {/* Expanded card */}
       <div
         className={`pomo-card ${expanded ? 'is-open' : ''}`}
-        style={{ '--c1': activeMeta.c1, '--c2': activeMeta.c2, '--glow': activeMeta.glow } as React.CSSProperties}
+        style={{ '--c1': displayMeta.c1, '--c2': displayMeta.c2, '--glow': displayMeta.glow } as React.CSSProperties}
       >
         {/* Top bar */}
         <div className="pomo-card-top">
           {pinnedTask ? (
-            <div className="pomo-attached-badge" style={{ color: activeMeta.c1 }}>
-              <activeMeta.icon size={11} />
+            <div className="pomo-attached-badge" style={{ color: displayMeta.c1 }}>
+              <displayMeta.icon size={11} />
               <span className="truncate max-w-[140px]">{pinnedTask.title}</span>
             </div>
           ) : (
@@ -381,7 +388,7 @@ export const ActiveTimerWidget: React.FC = () => {
         {/* Particles */}
         <div
           className={`pomo-particles ${displayRunning && (pinnedTask ? pinnedTask.cat === 'fire' : mode === 'focus') ? 'is-active' : ''}`}
-          style={{ '--pc': activeMeta.c1 } as React.CSSProperties}
+          style={{ '--pc': displayMeta.c1 } as React.CSSProperties}
         >
           {particles.map(p => (
             <span
@@ -394,11 +401,11 @@ export const ActiveTimerWidget: React.FC = () => {
 
         {/* Ring */}
         <div className="pomo-ring-zone">
-          <EmberRing size={172} stroke={8} progress={progress} meta={activeMeta} running={displayRunning} flash={flash}>
+          <EmberRing size={172} stroke={8} progress={progress} meta={displayMeta} running={displayRunning} flash={flash}>
             <div className="pomo-time">{fmt(displaySeconds)}</div>
             <div className="pomo-phase">
-              <activeMeta.icon size={12} style={{ color: activeMeta.c1 }} />
-              {activeMeta.label}
+              <displayMeta.icon size={12} style={{ color: displayMeta.c1 }} />
+              {displayMeta.label}
             </div>
           </EmberRing>
         </div>
@@ -410,7 +417,7 @@ export const ActiveTimerWidget: React.FC = () => {
               <span
                 key={i}
                 className={`pomo-dot ${i < sessionCount % CYCLE ? 'is-filled' : ''}`}
-                style={{ '--dc': activeMeta.c1 } as React.CSSProperties}
+                style={{ '--dc': displayMeta.c1 } as React.CSSProperties}
               />
             ))}
           </div>
@@ -419,7 +426,7 @@ export const ActiveTimerWidget: React.FC = () => {
         {/* Progress bar for attached mode */}
         {pinnedTask && (
           <div className="pomo-progress-bar-wrap">
-            <div className="pomo-progress-bar" style={{ width: `${Math.min(100, progress * 100)}%`, background: `linear-gradient(90deg, ${activeMeta.c1}, ${activeMeta.c2})` }} />
+            <div className="pomo-progress-bar" style={{ width: `${Math.min(100, progress * 100)}%`, background: `linear-gradient(90deg, ${displayMeta.c1}, ${displayMeta.c2})` }} />
           </div>
         )}
 
@@ -431,7 +438,7 @@ export const ActiveTimerWidget: React.FC = () => {
           <button
             className="pomo-play-btn"
             onClick={handleToggle}
-            style={{ '--c1': activeMeta.c1, '--c2': activeMeta.c2 } as React.CSSProperties}
+            style={{ '--c1': displayMeta.c1, '--c2': displayMeta.c2 } as React.CSSProperties}
             aria-label={primaryLabel}
           >
             {displayRunning

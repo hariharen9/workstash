@@ -4,7 +4,7 @@ import { useStore, type TopologyMode, occupiedCells } from '../store';
 import { useAuth } from '../auth';
 import { GlowCard } from './GlowCard';
 
-export const Header: React.FC<{ onNewTask: () => void; onDefrag: () => void; onOpenSettings: () => void; onOpenHelp: () => void; onOpenArchive: () => void }> = ({ onNewTask, onDefrag, onOpenSettings, onOpenHelp, onOpenArchive }) => {
+export const Header: React.FC<{ onNewTask: () => void; onDefrag: () => void; onOpenSettings: () => void; onOpenHelp: () => void; onOpenArchive: () => void; onOpenRhythm: () => void }> = ({ onNewTask, onDefrag, onOpenSettings, onOpenHelp, onOpenArchive, onOpenRhythm }) => {
   const { mode, changeTopology, tasks, addToast, gridLayout } = useStore();
   const { user, signOut } = useAuth();
 
@@ -127,6 +127,14 @@ export const Header: React.FC<{ onNewTask: () => void; onDefrag: () => void; onO
             </div>
           </div>
         </div>
+        <button
+          type="button"
+          className="cursor-pointer font-semibold text-[0.8125rem] py-2 px-3.5 rounded-[10px] transition-all duration-200 flex items-center gap-1.5 bg-elevated text-muted border border-line hover:text-text hover:border-faint"
+          onClick={onOpenRhythm}
+          title="Recurring tasks"
+        >
+          Rhythm
+        </button>
         <button
           type="button"
           className="cursor-pointer font-semibold text-[0.8125rem] py-2 px-3.5 rounded-[10px] transition-all duration-200 flex items-center gap-1.5 bg-elevated text-muted border border-line hover:text-text hover:border-faint"

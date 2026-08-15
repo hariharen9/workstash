@@ -18,7 +18,7 @@ const FREQUENCIES: { id: RecurrenceFrequency; label: string }[] = [
 ];
 
 export const RecurrenceEditModal: React.FC<{ task: Task; onClose: () => void }> = ({ task, onClose }) => {
-  const { updateRecurrence, wakeRecurringTask } = useStore();
+  const { updateRecurrence, promoteRecurringTask } = useStore();
   const [recurrence, setRecurrence] = useState<Recurrence>(
     task.recurrence || defaultRecurrence()
   );
@@ -166,9 +166,9 @@ export const RecurrenceEditModal: React.FC<{ task: Task; onClose: () => void }> 
           <button
             type="button"
             className="cursor-pointer font-semibold text-[0.8125rem] py-2.5 px-3 rounded-[10px] transition-all duration-200 bg-teal-dim text-teal border border-teal/30 hover:bg-teal/20"
-            onClick={() => { wakeRecurringTask(task.id); onClose(); }}
+            onClick={() => { promoteRecurringTask(task.id); onClose(); }}
           >
-            Wake now
+            Do now
           </button>
         </div>
       </GlowCard>
