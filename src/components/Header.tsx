@@ -3,9 +3,10 @@ import { Settings } from 'lucide-react';
 import { useStore, type TopologyMode, occupiedCells } from '../store';
 import { useAuth } from '../auth';
 import { GlowCard } from './GlowCard';
+import { playClick, playThemeToggle, playDefrag } from '../sounds';
 
 export const Header: React.FC<{ onNewTask: () => void; onDefrag: () => void; onOpenSettings: () => void; onOpenHelp: () => void; onOpenArchive: () => void; onOpenRhythm: () => void }> = ({ onNewTask, onDefrag, onOpenSettings, onOpenHelp, onOpenArchive, onOpenRhythm }) => {
-  const { mode, changeTopology, tasks, addToast, gridLayout, selectedTagFilter, setSelectedTagFilter } = useStore();
+  const { mode, changeTopology, tasks, addToast, gridLayout, selectedTagFilter, setSelectedTagFilter, theme, toggleTheme, soundsEnabled } = useStore();
   const { user, signOut } = useAuth();
 
   const TOTAL_CELLS = gridLayout === '8x4' ? 32 : gridLayout === '6x5' ? 30 : 24;
@@ -18,6 +19,7 @@ export const Header: React.FC<{ onNewTask: () => void; onDefrag: () => void; onO
 
   const handleTopoClick = (m: TopologyMode) => {
     changeTopology(m);
+    if (soundsEnabled) playClick();
     const label = {
       normal: 'All Blocks view restored',
       deep: 'Solo Focus — 1 block active, rest parked',
@@ -165,7 +167,7 @@ export const Header: React.FC<{ onNewTask: () => void; onDefrag: () => void; onO
               ? 'bg-teal-dim/40 text-teal border-teal/40 hover:bg-teal/20 shadow-[0_0_12px_-2px_rgba(79,227,206,0.3)]'
               : 'bg-elevated text-muted border-line hover:text-text hover:border-faint'
           }`}
-          onClick={onDefrag}
+          onClick={() => { onDefrag(); if (soundsEnabled) playDefrag(); }}
           title={completedOnGridCount > 0 ? `${completedOnGridCount} completed block${completedOnGridCount > 1 ? 's' : ''} ready for Defrag` : 'Defragment workspace'}
         >
           <span>Defrag</span>
@@ -181,6 +183,29 @@ export const Header: React.FC<{ onNewTask: () => void; onDefrag: () => void; onO
           onClick={onNewTask}
         >
           + New Task
+        </button>
+        {/* Theme Toggle */}
+        <button
+          type="button"
+          className="tile-action !w-9 !h-9"
+          title={theme === 'dark' ? 'Switch to Light mode' : 'Switch to Dark mode'}
+          onClick={() => {
+            toggleTheme();
+            if (soundsEnabled) playThemeToggle();
+            addToast(theme === 'dark' ? 'Light mode activated' : 'Dark mode activated', theme === 'dark' ? '☀' : '◑');
+          }}
+          aria-label="Toggle theme"
+        >
+          {theme === 'dark' ? (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+            </svg>
+          ) : (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+          )}
         </button>
         <button
           type="button"

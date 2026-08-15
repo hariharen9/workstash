@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from '../store';
 import { GlowCard } from './GlowCard';
+import { playClick, playThemeToggle } from '../sounds';
 
 export const SettingsModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
-  const { gridLayout, setGridLayout, resetWorkspace } = useStore();
+  const { gridLayout, setGridLayout, resetWorkspace, soundsEnabled, toggleSounds, theme, toggleTheme } = useStore();
   const [localLayout, setLocalLayout] = useState(gridLayout);
   const [confirmReset, setConfirmReset] = useState(false);
 
@@ -60,6 +61,69 @@ export const SettingsModal: React.FC<{ isOpen: boolean; onClose: () => void }> =
             ))}
           </div>
           <p className="text-xs text-muted mt-1">Adjusting this modifies the strict physical boundary of your workspace to combat cognitive overwhelm.</p>
+        </div>
+
+        {/* Sound Pack */}
+        <div className="flex flex-col gap-2.5 border-t border-line pt-4">
+          <label className="text-sm font-mono tracking-widest text-muted uppercase">Sound Pack</label>
+          <div className="flex items-center justify-between gap-3 bg-elevated/60 border border-line/70 rounded-xl px-4 py-3">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-sm font-medium text-text">Interface Sounds</span>
+              <span className="text-xs text-muted">Subtle synthesized audio for clicks, completions, and defrag</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                toggleSounds();
+                if (!soundsEnabled) playClick();
+              }}
+              className={`relative w-11 h-6 rounded-full transition-colors duration-200 cursor-pointer shrink-0 border ${
+                soundsEnabled ? 'bg-violet border-violet/60' : 'bg-elevated-hi border-line'
+              }`}
+              aria-label={soundsEnabled ? 'Disable sounds' : 'Enable sounds'}
+            >
+              <span
+                className={`absolute top-0.5 w-5 h-5 rounded-full shadow-sm transition-all duration-200 ${
+                  soundsEnabled ? 'left-[22px] bg-white' : 'left-0.5 bg-faint'
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+
+        {/* Theme */}
+        <div className="flex flex-col gap-2.5 border-t border-line pt-4">
+          <label className="text-sm font-mono tracking-widest text-muted uppercase">Appearance</label>
+          <div className="grid grid-cols-2 gap-3">
+            {(['dark', 'light'] as const).map(t => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => {
+                  if (theme !== t) {
+                    toggleTheme();
+                    if (soundsEnabled) playThemeToggle();
+                  }
+                }}
+                className={`py-3 rounded-xl border transition-all text-sm font-medium cursor-pointer flex items-center justify-center gap-2 ${
+                  theme === t
+                    ? 'bg-elevated-hi border-faint text-text shadow-sm'
+                    : 'bg-elevated border-line text-muted hover:border-faint hover:text-text'
+                }`}
+              >
+                {t === 'dark' ? (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                  </svg>
+                ) : (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2" />
+                  </svg>
+                )}
+                {t.charAt(0).toUpperCase() + t.slice(1)}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="flex flex-col gap-2 border-t border-line pt-4">

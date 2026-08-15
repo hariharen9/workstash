@@ -25,6 +25,7 @@ import {
   getAllTags,
 } from '../store';
 import { GlowCard } from './GlowCard';
+import { playCreate, playError } from '../sounds';
 
 interface CategoryOption {
   id: TaskCategory;
@@ -106,7 +107,7 @@ const TIMER_PRESETS = [
 const DEFAULT_POPULAR_TAGS = ['#frontend', '#backend', '#design', '#bug', '#infra', '#ops', '#sprint'];
 
 export const NewTaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
-  const { addTile, addRecurringTile, tasks, addToast, gridLayout } = useStore();
+  const { addTile, addRecurringTile, tasks, addToast, gridLayout, soundsEnabled } = useStore();
   const TOTAL_CELLS = gridLayout === '8x4' ? 32 : gridLayout === '6x5' ? 30 : 24;
 
   const [activeTab, setActiveTab] = useState<'standard' | 'recurring'>('standard');
@@ -260,6 +261,7 @@ export const NewTaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
         if (size !== preferred) {
           addToast(`Grid tight — placed as ${size.w}×${size.h}. Drag corner to resize.`, '⚡');
         } else {
+          if (soundsEnabled) playCreate();
           addToast(`Created "${trimmedTitle}" (${size.w}×${size.h})`, '✓');
         }
         onClose();
@@ -267,6 +269,7 @@ export const NewTaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
       }
     }
 
+    if (soundsEnabled) playError();
     addToast('Grid is full — defrag or resize existing blocks first', '⚠');
   };
 

@@ -1,12 +1,18 @@
-import { StrictMode } from 'react'
+import { StrictMode, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import { AuthProvider, useAuth } from './auth'
 import { LoginScreen } from './components/LoginScreen'
+import { useStore } from './store'
 
 const Root = () => {
   const { user, loading } = useAuth();
+  const theme = useStore((s) => s.theme);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
 
   if (loading) {
     return (

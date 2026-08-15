@@ -104,6 +104,12 @@ interface AppState {
   focusSessions: FocusSession[];
   gridLayout: GridLayout;
 
+  theme: 'dark' | 'light';
+  toggleTheme: () => void;
+
+  soundsEnabled: boolean;
+  toggleSounds: () => void;
+
   morningIntentDate: string | null;
   setMorningIntentShown: () => void;
 
@@ -514,6 +520,8 @@ function buildInitialState() {
     shutterOpen: null as string | null,
     toasts: [] as Toast[],
     gridLayout: '6x4' as GridLayout,
+    theme: 'dark' as 'dark' | 'light',
+    soundsEnabled: true,
     morningIntentDate: null,
     undoStack: [] as Snapshot[],
     redoStack: [] as Snapshot[],
@@ -599,6 +607,14 @@ export const useStore = create<AppState>()(
       },
 
       setIsHoveringTask: (val) => set({ isHoveringTask: val }),
+
+      toggleTheme: () => set((state) => {
+        const next = state.theme === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        return { theme: next };
+      }),
+
+      toggleSounds: () => set((state) => ({ soundsEnabled: !state.soundsEnabled })),
 
       setGridLayout: (layout) => set((state) => {
         // Keep completed tasks; only re-apply topology to active ones' sizes
@@ -1247,15 +1263,19 @@ export const useStore = create<AppState>()(
     {
       name: STORAGE_KEY,
       version: 1,
-      partialize: (state) => serializeWorkspaceState({
-        mode: state.mode,
-        focusedTaskId: state.focusedTaskId,
-        tasks: state.tasks,
-        activityLogs: state.activityLogs,
-        focusSessions: state.focusSessions,
-        gridLayout: state.gridLayout,
-        morningIntentDate: state.morningIntentDate,
-        notificationPermission: state.notificationPermission,
+      partialize: (state) => ({
+        ...serializeWorkspaceState({
+          mode: state.mode,
+          focusedTaskId: state.focusedTaskId,
+          tasks: state.tasks,
+          activityLogs: state.activityLogs,
+          focusSessions: state.focusSessions,
+          gridLayout: state.gridLayout,
+          morningIntentDate: state.morningIntentDate,
+          notificationPermission: state.notificationPermission,
+        }),
+        theme: state.theme,
+        soundsEnabled: state.soundsEnabled,
       }),
       merge: (persisted, current) => {
         const p = persisted as Partial<AppState> | undefined;
@@ -1279,6 +1299,8 @@ export const useStore = create<AppState>()(
           redoStack: [],
           focusSessions: Array.isArray(p.focusSessions) ? p.focusSessions : [],
           activityLogs: Array.isArray(p.activityLogs) ? p.activityLogs : current.activityLogs,
+          theme: (p as { theme?: string }).theme === 'light' ? 'light' : 'dark',
+          soundsEnabled: typeof (p as { soundsEnabled?: boolean }).soundsEnabled === 'boolean' ? (p as { soundsEnabled?: boolean }).soundsEnabled! : true,
         };
       },
     }

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useStore, occupiedCells, type Task } from '../store';
 import { Tile } from './Tile';
 import { HoldingPenDock } from './HoldingPenDock';
+import { playDrop } from '../sounds';
 import {
   DndContext,
   pointerWithin,
@@ -154,6 +155,7 @@ export const BentoGrid: React.FC<{ onNewTask: () => void }> = ({ onNewTask }) =>
   const used = occupiedCells(tasks);
   const isFull = used >= TOTAL_CELLS;
   const gridTasks = tasks.filter(t => !t.archived && !t.isPen && !t.dormant);
+  const soundsEnabled = useStore(s => s.soundsEnabled);
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId]     = useState<string | null>(null);
@@ -180,6 +182,7 @@ export const BentoGrid: React.FC<{ onNewTask: () => void }> = ({ onNewTask }) =>
     const { active, over } = event;
     if (over && active.id !== over.id) {
       reorderTasks(active.id as string, over.id as string);
+      if (soundsEnabled) playDrop();
     }
     setActiveId(null);
     setOverId(null);

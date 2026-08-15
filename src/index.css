@@ -79,6 +79,11 @@
 }
 
 @layer base {
+  /* ─── Theme transition ─────────────────────────────────────────── */
+  html {
+    transition: background-color 0.35s ease, color 0.35s ease;
+  }
+
   html, body {
     margin: 0;
     padding: 0;
@@ -98,6 +103,173 @@
     text-rendering: optimizeLegibility;
     overflow-x: hidden;
     overflow-y: auto;
+    transition: background-color 0.35s ease, color 0.35s ease;
+  }
+
+  /* ─── Light Mode — Premium, independent palette ────────────────── */
+  /*
+     Inspired by Linear / Vercel / Raycast light mode.
+     NOT an inversion of dark — a completely independent aesthetic:
+     - Pure white cards on a cool blue-grey page
+     - Real depth shadows (dark, not glows)
+     - Deep, saturated accents that pop on white
+     - Clear surface hierarchy across 4 levels
+  */
+  [data-theme="light"] {
+    /* ── Surfaces ── */
+    --color-void: #F1F3F9;        /* page background — cool blue-grey */
+    --color-surface: #FFFFFF;     /* cards/tiles — crisp white */
+    --color-elevated: #F1F3F9;    /* inset panels — same as page, sunken feel */
+    --color-elevated-hi: #E8EAF3; /* active states, hover, selected */
+    --color-line: #D1D5E8;        /* borders — clearly visible, not harsh */
+
+    /* ── Typography ── */
+    --color-text: #0D0F1A;        /* near-black, richer than pure #000 */
+    --color-muted: #525C78;       /* secondary text — blue-grey */
+    --color-faint: #8892AA;       /* placeholders, disabled */
+
+    /* ── Accents — deeper/richer to work on white backgrounds ── */
+    --color-violet: #5448C8;      /* deep indigo-violet */
+    --color-violet-dim: #5448C814;
+    --color-amber: #A0560A;       /* deep burnt amber */
+    --color-amber-dim: #A0560A14;
+    --color-teal: #0A7B6D;        /* deep teal-green */
+    --color-teal-dim: #0A7B6D14;
+    --color-danger: #C62828;
+
+    /* ── Category accent stripes ── */
+    --shadow-focus-cat: inset 3px 0 0 #5448C8;
+    --shadow-fire-cat:  inset 3px 0 0 #A0560A;
+    --shadow-admin-cat: inset 3px 0 0 #0A7B6D;
+    --shadow-pen-cat:   inset 3px 0 0 #8892AA;
+
+    /* ── Shadows — real depth, not glows ── */
+    --shadow-tile:    0 1px 2px rgba(13,15,26,0.06), 0 4px 16px rgba(13,15,26,0.08);
+    --shadow-shutter: 0 32px 80px rgba(13,15,26,0.22), 0 4px 16px rgba(13,15,26,0.10);
+    --shadow-toast:   0 4px 20px rgba(13,15,26,0.14), 0 1px 4px rgba(13,15,26,0.08);
+    --shadow-brand:   0 0 0 3px rgba(84,72,200,0.18), 0 4px 16px rgba(84,72,200,0.28);
+  }
+
+  /* Page background in light mode — flat, no gradient noise */
+  [data-theme="light"] html,
+  [data-theme="light"] body {
+    background-image: none;
+    background-color: #F1F3F9;
+  }
+
+  /* Light mode scrollbar */
+  [data-theme="light"] * {
+    scrollbar-color: rgba(84, 72, 200, 0.2) transparent;
+  }
+  [data-theme="light"] ::-webkit-scrollbar-thumb {
+    background: rgba(84, 72, 200, 0.15);
+  }
+  [data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+    background: rgba(84, 72, 200, 0.4);
+  }
+
+  /* Override GlowCard glow in light — use shadow depth instead of chromatic glow */
+  [data-theme="light"] [data-glow]::before,
+  [data-theme="light"] [data-glow]::after {
+    opacity: 0.15;
+  }
+
+  /* Header in light mode gets a white surface with shadow */
+  [data-theme="light"] header {
+    background-color: rgba(255,255,255,0.95) !important;
+    backdrop-filter: blur(12px) !important;
+    box-shadow: 0 1px 0 #D1D5E8, 0 2px 12px rgba(13,15,26,0.06) !important;
+    border-bottom: 1px solid #D1D5E8 !important;
+  }
+
+  /* Tiles: fully opaque white, clear border, real shadow */
+  [data-theme="light"] [data-task-id] {
+    background-color: #FFFFFF !important;
+    border: 1px solid #D1D5E8 !important;
+    box-shadow: 0 1px 2px rgba(13,15,26,0.05), 0 4px 12px rgba(13,15,26,0.07) !important;
+  }
+  [data-theme="light"] [data-task-id]:hover {
+    box-shadow: 0 2px 4px rgba(13,15,26,0.07), 0 8px 24px rgba(13,15,26,0.10) !important;
+  }
+
+  /* Modals and overlays — white card on dimmed bg */
+  [data-theme="light"] .shadow-2xl,
+  [data-theme="light"] .shadow-shutter {
+    box-shadow: var(--shadow-shutter) !important;
+  }
+
+  /* Toast */
+  [data-theme="light"] .shadow-toast {
+    box-shadow: var(--shadow-toast) !important;
+  }
+
+  /* Category badge override */
+  [data-theme="light"] .shadow-focus-cat { box-shadow: var(--shadow-focus-cat) !important; }
+  [data-theme="light"] .shadow-fire-cat  { box-shadow: var(--shadow-fire-cat) !important;  }
+  [data-theme="light"] .shadow-admin-cat { box-shadow: var(--shadow-admin-cat) !important; }
+  [data-theme="light"] .shadow-pen-cat   { box-shadow: var(--shadow-pen-cat) !important;   }
+
+  /* Mode switcher in header: white bg pill */
+  [data-theme="light"] .bg-void\/50 {
+    background-color: #F1F3F9 !important;
+  }
+
+  /* HoldingPen + grid area */
+  [data-theme="light"] .bg-surface\/95 {
+    background-color: #FFFFFF !important;
+  }
+
+  /* Topology mode buttons active state */
+  [data-theme="light"] .bg-elevated-hi {
+    background-color: #E8EAF3;
+  }
+
+  /* Focus ring stays deep violet in light */
+  [data-theme="light"] :focus-visible {
+    outline-color: #5448C8;
+  }
+
+  /* Completed tile — teal tint on white */
+  [data-theme="light"] .border-teal\/40 {
+    border-color: rgba(10,123,109,0.35) !important;
+  }
+
+  /* Tag pills in light mode */
+  [data-theme="light"] .bg-elevated\/70 {
+    background-color: #F1F3F9 !important;
+  }
+
+  /* tile-field textarea/input */
+  [data-theme="light"] .tile-field {
+    background-color: #F8F9FC !important;
+    border-color: #D1D5E8 !important;
+    color: #0D0F1A !important;
+  }
+  [data-theme="light"] .tile-field:focus {
+    background-color: #FFFFFF !important;
+    border-color: #8892AA !important;
+  }
+
+  /* tile-action buttons */
+  [data-theme="light"] .tile-action:hover {
+    background-color: #E8EAF3 !important;
+    color: #0D0F1A !important;
+  }
+
+  /* Blueprint slot */
+  [data-theme="light"] .border-dashed {
+    border-color: rgba(84,72,200,0.35) !important;
+  }
+
+  /* Tile transitions for theme switch */
+  *, *::before, *::after {
+    transition-property: background-color, border-color, color, box-shadow;
+    transition-duration: 0.25s;
+    transition-timing-function: ease;
+  }
+  /* Don't animate transforms or layout props to avoid jank */
+  *, *::before, *::after {
+    transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
   }
 
   #root {

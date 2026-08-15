@@ -5,6 +5,7 @@ import { TileContent } from './TileContent';
 import { TileCompleted } from './TileCompleted';
 import { useSortable } from '@dnd-kit/sortable';
 import { GlowCard } from './GlowCard';
+import { playComplete, playArchive, playTagSpotlight } from '../sounds';
 
 const DragIcon = () => (
   <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden>
@@ -44,7 +45,7 @@ const ResizeGripIcon = () => (
 );
 
 export const Tile: React.FC<{ task: Task; isBeingDragged?: boolean; isDragTarget?: boolean }> = ({ task, isBeingDragged = false, isDragTarget = false }) => {
-  const { archiveTask, toggleCompleteTask, openShutter, setTileSize, tasks, mode, setFocusedTask, addToast, setIsHoveringTask, gridLayout, updateTitle, updateCategory, selectedTagFilter, setSelectedTagFilter } = useStore();
+  const { archiveTask, toggleCompleteTask, openShutter, setTileSize, tasks, mode, setFocusedTask, addToast, setIsHoveringTask, gridLayout, updateTitle, updateCategory, selectedTagFilter, setSelectedTagFilter, soundsEnabled } = useStore();
 
   const TOTAL_CELLS = gridLayout === '8x4' ? 32 : gridLayout === '6x5' ? 30 : 24;
   const maxCols = gridLayout === '8x4' ? 8 : 6;
@@ -135,6 +136,7 @@ export const Tile: React.FC<{ task: Task; isBeingDragged?: boolean; isDragTarget
   const handleArchive = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isCompleting || isChecking) return;
+    if (soundsEnabled) playArchive();
     setIsCompleting(true);
     setTimeout(() => {
       archiveTask(task.id);
@@ -150,6 +152,7 @@ export const Tile: React.FC<{ task: Task; isBeingDragged?: boolean; isDragTarget
       toggleCompleteTask(task.id);
       setIsChecking(false);
       if (!task.completed) {
+        if (soundsEnabled) playComplete();
         addToast(`Done — "${task.title}" (awaiting defrag)`, '✓');
       } else {
         addToast(`Reopened "${task.title}"`, '↩');
@@ -396,6 +399,7 @@ export const Tile: React.FC<{ task: Task; isBeingDragged?: boolean; isDragTarget
                   const next = isCurrentFilter ? null : tag;
                   setSelectedTagFilter(next);
                   if (next) {
+                    if (soundsEnabled) playTagSpotlight();
                     addToast(`Spotlighting ${tag}`, '◈');
                   } else {
                     addToast('Cleared tag spotlight', '✓');

@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { useStore, type Task } from '../store';
 import { TimerControls } from './TimerControls';
+import { MarkdownNote } from './MarkdownNote';
+import { playSubtaskToggle } from '../sounds';
 
 const CheckIcon = () => (
   <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="#070A10" strokeWidth="3.5" aria-hidden>
@@ -10,7 +12,7 @@ const CheckIcon = () => (
 );
 
 export const TileContent: React.FC<{ task: Task; disableTick?: boolean }> = ({ task, disableTick = false }) => {
-  const { setTab, updateNotes, toggleSubtask, removeSubtask, addSubtask, tickTimer, setEnergy } = useStore();
+  const { setTab, updateNotes, toggleSubtask, removeSubtask, addSubtask, tickTimer, setEnergy, soundsEnabled } = useStore();
   const subtaskInputRef = useRef<HTMLInputElement>(null);
   const listAddInputRef = useRef<HTMLInputElement>(null);
   const [listAdding, setListAdding] = useState(false);
@@ -73,7 +75,10 @@ export const TileContent: React.FC<{ task: Task; disableTick?: boolean }> = ({ t
                 <button
                   type="button"
                   className={`check-box ${s.done ? 'is-done' : ''} ${compact ? '!w-3.5 !h-3.5' : ''}`}
-                  onClick={() => toggleSubtask(task.id, s.id)}
+                  onClick={() => {
+                    toggleSubtask(task.id, s.id);
+                    if (soundsEnabled) playSubtaskToggle();
+                  }}
                   aria-label={s.done ? 'Mark incomplete' : 'Mark complete'}
                 >
                   {s.done && <CheckIcon />}
@@ -277,16 +282,11 @@ export const TileContent: React.FC<{ task: Task; disableTick?: boolean }> = ({ t
     return (
       <div className="flex flex-col h-full min-h-0 gap-2.5 relative">
         <div className="flex-1 min-h-0 grid grid-cols-2 gap-3">
-          <div className="flex flex-col min-h-0 gap-1.5">
-            <span className="text-[0.7rem] font-semibold tracking-[0.04em] uppercase text-muted shrink-0">Scratchpad</span>
-            <textarea
-              className="tile-field flex-1 resize-none font-mono text-[0.8125rem] leading-relaxed text-[#C8E8DC] min-h-0"
-              placeholder="Notes, errors, decisions..."
-              value={task.notes || ''}
-              onChange={(e) => updateNotes(task.id, e.target.value)}
-              data-lenis-prevent="true"
-            />
-          </div>
+          <MarkdownNote
+            value={task.notes || ''}
+            onChange={(v) => updateNotes(task.id, v)}
+            placeholder="Notes, errors, decisions..."
+          />
           <div className="flex flex-col min-h-0 gap-1.5">
             <div className="flex items-center justify-between shrink-0">
               <span className="text-[0.7rem] font-semibold tracking-[0.04em] uppercase text-muted">Checklist</span>
@@ -330,12 +330,11 @@ export const TileContent: React.FC<{ task: Task; disableTick?: boolean }> = ({ t
       </div>
       <div className="flex-1 min-h-0 flex flex-col">
         {task.tab === 'notes' && (
-          <textarea
-            className="tile-field flex-1 resize-none font-mono text-[0.8125rem] leading-relaxed text-[#C8E8DC] min-h-0"
-            placeholder="Scratch notes, error logs, ideas..."
+          <MarkdownNote
             value={task.notes || ''}
-            onChange={(e) => updateNotes(task.id, e.target.value)}
-            data-lenis-prevent="true"
+            onChange={(v) => updateNotes(task.id, v)}
+            placeholder="Scratch notes, error logs, ideas..."
+            className="flex-1 min-h-0"
           />
         )}
         {task.tab === 'subtasks' && (
