@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../auth';
 import { Zap, Cloud, ShieldCheck, WifiOff, X, ArrowRight, Check } from 'lucide-react';
+import { Logo } from './Logo';
 
 export const LoginScreen: React.FC<{ isModal?: boolean }> = ({ isModal = false }) => {
   const { signInWithGoogle, signInWithEmail, signUpWithEmail, continueAsGuest, closeLoginModal, isGuest } = useAuth();
@@ -57,9 +58,7 @@ export const LoginScreen: React.FC<{ isModal?: boolean }> = ({ isModal = false }
         {/* Brand Header */}
         <div className="flex flex-col items-center text-center mb-8">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-[12px] bg-[conic-gradient(from_220deg,theme(colors.violet),theme(colors.teal),theme(colors.amber),theme(colors.violet))] grid place-items-center shadow-brand shrink-0">
-              <span className="w-3.5 h-3.5 rounded-[4px] bg-void"></span>
-            </div>
+            <Logo size={42} />
             <h1 className="font-display text-[1.4rem] font-bold m-0 tracking-[-0.03em] leading-none text-text">
               WorkStash
             </h1>

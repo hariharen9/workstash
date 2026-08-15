@@ -1,5 +1,6 @@
 import React from 'react';
 import { Heart, ExternalLink, Shield } from 'lucide-react';
+import { Logo } from './Logo';
 
 export const Footer: React.FC<{ onOpenPrivacy: () => void }> = ({ onOpenPrivacy }) => {
   return (
@@ -7,9 +8,7 @@ export const Footer: React.FC<{ onOpenPrivacy: () => void }> = ({ onOpenPrivacy 
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
         {/* Left: Logo, Name & Motto */}
         <div className="flex items-center gap-2.5 shrink-0">
-          <div className="w-5 h-5 rounded-[6px] bg-[conic-gradient(from_220deg,theme(colors.violet),theme(colors.teal),theme(colors.amber),theme(colors.violet))] grid place-items-center shadow-brand shrink-0">
-            <span className="w-1.5 h-1.5 rounded-[2px] bg-void"></span>
-          </div>
+          <Logo size={22} />
           <div className="flex items-center gap-2">
             <span className="font-display font-semibold text-text tracking-tight text-[0.85rem]">
               WorkStash

@@ -1,48 +1,81 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <!-- Multi-stop Mesh / Radial Blend matching the exact WorkStash App Icon -->
+    <!-- Rich multi-colour base gradient -->
     <linearGradient id="baseGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#4FE3CE" />
-      <stop offset="35%" stop-color="#6EE7B7" />
-      <stop offset="70%" stop-color="#FBBF24" />
-      <stop offset="100%" stop-color="#F59E0B" />
+      <stop offset="0%" stop-color="#22D3EE"/>
+      <stop offset="18%" stop-color="#34D399"/>
+      <stop offset="35%" stop-color="#A3E635"/>
+      <stop offset="50%" stop-color="#FDE047"/>
+      <stop offset="65%" stop-color="#FB923C"/>
+      <stop offset="80%" stop-color="#F472B6"/>
+      <stop offset="92%" stop-color="#A78BFA"/>
+      <stop offset="100%" stop-color="#60A5FA"/>
     </linearGradient>
 
-    <radialGradient id="violetGlow" cx="15%" cy="85%" r="75%">
-      <stop offset="0%" stop-color="#A78BFA" stop-opacity="1" />
-      <stop offset="50%" stop-color="#818CF8" stop-opacity="0.8" />
-      <stop offset="100%" stop-color="#818CF8" stop-opacity="0" />
+    <!-- Cyan / turquoise top-left bloom -->
+    <radialGradient id="cyanGlow" cx="12%" cy="12%" r="70%">
+      <stop offset="0%" stop-color="#06B6D4" stop-opacity="1"/>
+      <stop offset="28%" stop-color="#22D3EE" stop-opacity="0.95"/>
+      <stop offset="58%" stop-color="#34D399" stop-opacity="0.65"/>
+      <stop offset="100%" stop-color="#34D399" stop-opacity="0"/>
     </radialGradient>
 
-    <radialGradient id="cyanGlow" cx="20%" cy="20%" r="65%">
-      <stop offset="0%" stop-color="#38BDF8" stop-opacity="1" />
-      <stop offset="60%" stop-color="#34D399" stop-opacity="0.6" />
-      <stop offset="100%" stop-color="#34D399" stop-opacity="0" />
+    <!-- Lime / green upper-middle bloom -->
+    <radialGradient id="limeGlow" cx="48%" cy="8%" r="58%">
+      <stop offset="0%" stop-color="#BEF264" stop-opacity="0.9"/>
+      <stop offset="45%" stop-color="#4ADE80" stop-opacity="0.65"/>
+      <stop offset="100%" stop-color="#4ADE80" stop-opacity="0"/>
     </radialGradient>
 
-    <radialGradient id="amberGlow" cx="85%" cy="65%" r="65%">
-      <stop offset="0%" stop-color="#F59E0B" stop-opacity="1" />
-      <stop offset="60%" stop-color="#FBBF24" stop-opacity="0.8" />
-      <stop offset="100%" stop-color="#FBBF24" stop-opacity="0" />
+    <!-- Warm yellow / orange right-side bloom -->
+    <radialGradient id="amberGlow" cx="92%" cy="58%" r="70%">
+      <stop offset="0%" stop-color="#FACC15" stop-opacity="1"/>
+      <stop offset="38%" stop-color="#FB923C" stop-opacity="0.9"/>
+      <stop offset="68%" stop-color="#F97316" stop-opacity="0.65"/>
+      <stop offset="100%" stop-color="#F97316" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Pink / magenta lower-right bloom -->
+    <radialGradient id="pinkGlow" cx="78%" cy="95%" r="65%">
+      <stop offset="0%" stop-color="#EC4899" stop-opacity="1"/>
+      <stop offset="38%" stop-color="#F472B6" stop-opacity="0.85"/>
+      <stop offset="70%" stop-color="#C084FC" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#C084FC" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Violet / indigo lower-left bloom -->
+    <radialGradient id="violetGlow" cx="8%" cy="88%" r="72%">
+      <stop offset="0%" stop-color="#8B5CF6" stop-opacity="1"/>
+      <stop offset="35%" stop-color="#A78BFA" stop-opacity="0.9"/>
+      <stop offset="65%" stop-color="#6366F1" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#6366F1" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Blue accent between violet and cyan -->
+    <radialGradient id="blueGlow" cx="28%" cy="55%" r="58%">
+      <stop offset="0%" stop-color="#3B82F6" stop-opacity="0.75"/>
+      <stop offset="55%" stop-color="#60A5FA" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#60A5FA" stop-opacity="0"/>
     </radialGradient>
 
     <clipPath id="squircleClip">
-      <rect x="36" y="36" width="440" height="440" rx="128" ry="128" />
+      <rect x="36" y="36" width="440" height="440" rx="128" ry="128"/>
     </clipPath>
   </defs>
 
-  <!-- Outer Squircle with Layered Chromatic Gradients -->
+  <!-- Outer squircle -->
   <g clip-path="url(#squircleClip)">
-    <!-- Base Gradient -->
-    <rect x="36" y="36" width="440" height="440" fill="url(#baseGrad)" />
-    <!-- Violet Bottom-Left Bloom -->
-    <rect x="36" y="36" width="440" height="440" fill="url(#violetGlow)" />
-    <!-- Cyan Top-Left Light -->
-    <rect x="36" y="36" width="440" height="440" fill="url(#cyanGlow)" />
-    <!-- Amber Sunset Accent -->
-    <rect x="36" y="36" width="440" height="440" fill="url(#amberGlow)" />
+    <rect x="36" y="36" width="440" height="440" fill="url(#baseGrad)"/>
+
+    <!-- Layered colour blooms -->
+    <rect x="36" y="36" width="440" height="440" fill="url(#cyanGlow)"/>
+    <rect x="36" y="36" width="440" height="440" fill="url(#limeGlow)"/>
+    <rect x="36" y="36" width="440" height="440" fill="url(#amberGlow)"/>
+    <rect x="36" y="36" width="440" height="440" fill="url(#pinkGlow)"/>
+    <rect x="36" y="36" width="440" height="440" fill="url(#violetGlow)"/>
+    <rect x="36" y="36" width="440" height="440" fill="url(#blueGlow)"/>
   </g>
 
-  <!-- Inner Bento Center Void Block -->
-  <rect x="184" y="184" width="144" height="144" rx="42" ry="42" fill="#070A10" />
+  <!-- Inner Bento center void -->
+  <rect x="184" y="184" width="144" height="144" rx="42" ry="42" fill="#070A10"/>
 </svg>

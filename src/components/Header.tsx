@@ -3,6 +3,7 @@ import { Settings, Cloud } from 'lucide-react';
 import { useStore, type TopologyMode, occupiedCells, getTotalCells } from '../store';
 import { useAuth } from '../auth';
 import { GlowCard } from './GlowCard';
+import { Logo } from './Logo';
 import { playClick, playThemeToggle, playDefrag } from '../sounds';
 
 // ─── Spatial Bloom Action Menu ────────────────────────────────────────────────
@@ -213,9 +214,7 @@ export const Header: React.FC<{ onNewTask: () => void; onDefrag: () => void; onO
       <div className="w-full flex items-center justify-between gap-2 min-w-0">
         <div className="flex items-center gap-2 sm:gap-6 shrink-0">
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-[8px] bg-[conic-gradient(from_220deg,theme(colors.violet),theme(colors.teal),theme(colors.amber),theme(colors.violet))] grid place-items-center shadow-brand shrink-0">
-              <span className="w-2.5 h-2.5 rounded-[3px] bg-void"></span>
-            </div>
+            <Logo size={32} />
             <div className="shrink-0">
               <h1 className="font-display text-[1rem] sm:text-[1.05rem] font-semibold m-0 tracking-[-0.03em] leading-none text-text">
                 WorkStash
