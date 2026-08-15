@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { useStore, type Task, type TaskCategory, occupiedCells } from '../store';
+import { useStore, type Task, type TaskCategory, occupiedCells, getTotalCells, getLayoutDimensions } from '../store';
 import { TileContent } from './TileContent';
 import { TileCompleted } from './TileCompleted';
 import { useSortable } from '@dnd-kit/sortable';
@@ -47,9 +47,8 @@ const ResizeGripIcon = () => (
 export const Tile: React.FC<{ task: Task; isBeingDragged?: boolean; isDragTarget?: boolean }> = ({ task, isBeingDragged = false, isDragTarget = false }) => {
   const { archiveTask, toggleCompleteTask, openShutter, setTileSize, tasks, mode, setFocusedTask, addToast, setIsHoveringTask, gridLayout, updateTitle, updateCategory, selectedTagFilter, setSelectedTagFilter, soundsEnabled } = useStore();
 
-  const TOTAL_CELLS = gridLayout === '8x4' ? 32 : gridLayout === '6x5' ? 30 : 24;
-  const maxCols = gridLayout === '8x4' ? 8 : 6;
-  const maxRows = gridLayout === '6x5' ? 5 : 4;
+  const TOTAL_CELLS = getTotalCells(gridLayout);
+  const { cols: maxCols, rows: maxRows } = getLayoutDimensions(gridLayout);
 
   const isMicro    = task.w === 1 && task.h === 1;
   const isSlimWide = task.w >= 2 && task.h === 1;

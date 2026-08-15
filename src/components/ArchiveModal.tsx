@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useStore, occupiedCells } from '../store';
+import { useStore, occupiedCells, getTotalCells } from '../store';
 import { GlowCard } from './GlowCard';
 
 export const ArchiveModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
@@ -32,7 +32,7 @@ export const ArchiveModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
     ? allArchived.filter(t => t.tags && t.tags.includes(filterTag))
     : allArchived;
 
-  const TOTAL_CELLS = gridLayout === '8x4' ? 32 : gridLayout === '6x5' ? 30 : 24;
+  const TOTAL_CELLS = getTotalCells(gridLayout);
   const used = occupiedCells(tasks);
   const hasGridRoom = used < TOTAL_CELLS;
 

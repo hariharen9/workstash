@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useStore, occupiedCells, type Task } from '../store';
+import { useStore, occupiedCells, getTotalCells, type Task } from '../store';
 import { Tile } from './Tile';
 import { playDrop } from '../sounds';
 import {
@@ -150,7 +150,7 @@ const DragOverlayCard: React.FC<{ task: Task }> = ({ task }) => {
 export const BentoGrid: React.FC<{ onNewTask: () => void }> = ({ onNewTask }) => {
   const { tasks, gridLayout, reorderTasks, promotePenItem } = useStore();
 
-  const TOTAL_CELLS = gridLayout === '8x4' ? 32 : gridLayout === '6x5' ? 30 : 24;
+  const TOTAL_CELLS = getTotalCells(gridLayout);
   const used = occupiedCells(tasks);
   const isFull = used >= TOTAL_CELLS;
   const gridTasks = tasks.filter(t => !t.archived && !t.isPen && !t.dormant);
@@ -229,6 +229,7 @@ export const BentoGrid: React.FC<{ onNewTask: () => void }> = ({ onNewTask }) =>
         >
           <SortableContext items={gridTasks.map(t => t.id)} strategy={rectSortingStrategy}>
             <div className={`flex-1 grid min-h-0 grid-flow-dense gap-2.5 sm:gap-3 md:gap-3.5 grid-cols-2 auto-rows-[150px] md:auto-rows-auto ${
+              gridLayout === '8x5' ? 'md:grid-cols-8 md:grid-rows-5' :
               gridLayout === '8x4' ? 'md:grid-cols-8 md:grid-rows-4' :
               gridLayout === '6x5' ? 'md:grid-cols-6 md:grid-rows-5' :
               'md:grid-cols-6 md:grid-rows-4'

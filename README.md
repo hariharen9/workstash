@@ -79,7 +79,7 @@ Tasks are not uniform checklist lines. They adapt to the true cognitive weight o
 - **Live Corner Drag-Resize** — Grab the bottom-right handle of any block to dynamically resize its footprint on the fly.
 
 ### 📐 2. The Capacity Ceiling
-The header features an interactive **Capacity Gauge** (`6×4`, `8×4`, or `6×5` grids). When your board hits 100%, you are strictly prevented from hoarding more tasks until you finish, downsize, or defrag. **Honesty built into the physics of the UI.**
+The header features an interactive **Capacity Gauge** (`6×4`, `8×4`, `6×5`, or `8×5` grids). When your board hits 100%, you are strictly prevented from hoarding more tasks until you finish, downsize, or defrag. **Honesty built into the physics of the UI.**
 
 ### ⚡ 3. Four Dynamic Board Topologies
 Reshape the board to match your current mental energy in one click:

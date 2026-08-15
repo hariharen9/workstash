@@ -79,7 +79,22 @@ export interface Toast {
   icon: string;
 }
 
-export type GridLayout = '6x4' | '8x4' | '6x5';
+export type GridLayout = '6x4' | '8x4' | '6x5' | '8x5';
+
+export function getLayoutDimensions(layout: GridLayout | string = '6x4'): { cols: number; rows: number; total: number } {
+  switch (layout) {
+    case '8x5': return { cols: 8, rows: 5, total: 40 };
+    case '8x4': return { cols: 8, rows: 4, total: 32 };
+    case '6x5': return { cols: 6, rows: 5, total: 30 };
+    case '6x4':
+    default:
+      return { cols: 6, rows: 4, total: 24 };
+  }
+}
+
+export function getTotalCells(layout: GridLayout | string = '6x4'): number {
+  return getLayoutDimensions(layout).total;
+}
 
 export interface PersistedWorkspace {
   mode: TopologyMode;
@@ -387,10 +402,9 @@ export function streakForTask(t: Task): number {
   return streak;
 }
 
-function applyTopology(tasks: Task[], mode: TopologyMode, focusedTaskId: string | null, gridLayout: string) {
+function applyTopology(tasks: Task[], mode: TopologyMode, focusedTaskId: string | null, gridLayout: GridLayout | string) {
   let newFocusedId = focusedTaskId;
-  const cols = gridLayout === '8x4' ? 8 : 6;
-  const rows = gridLayout === '6x5' ? 5 : 4;
+  const { cols, rows } = getLayoutDimensions(gridLayout as GridLayout);
 
   tasks.forEach(t => {
     t.parked = false;
@@ -808,7 +822,7 @@ export const useStore = create<AppState>()(
         const task = get().tasks.find(t => t.id === id);
         if (!task?.recurrence) return;
 
-        const total = get().gridLayout === '8x4' ? 32 : get().gridLayout === '6x5' ? 30 : 24;
+        const total = getTotalCells(get().gridLayout);
         const used = occupiedCells(get().tasks);
         let w = task.naturalW;
         let h = task.naturalH;
@@ -910,7 +924,7 @@ export const useStore = create<AppState>()(
 
         get().pushSnapshot();
         const nextCompleted = !task.completed;
-        const TOTAL_CELLS = get().gridLayout === '8x4' ? 32 : get().gridLayout === '6x5' ? 30 : 24;
+        const TOTAL_CELLS = getTotalCells(get().gridLayout);
 
         if (nextCompleted) {
           get().logActivity(`Completed "${task.title}"`, task.cat === 'focus' ? 'focus' : task.cat === 'fire' ? 'fire' : 'admin');
@@ -957,7 +971,7 @@ export const useStore = create<AppState>()(
         const task = get().tasks.find(t => t.id === id);
         if (!task) return;
 
-        const TOTAL_CELLS = get().gridLayout === '8x4' ? 32 : get().gridLayout === '6x5' ? 30 : 24;
+        const TOTAL_CELLS = getTotalCells(get().gridLayout);
         const used = occupiedCells(get().tasks);
         const taskCells = task.naturalW * task.naturalH;
 
@@ -1201,7 +1215,7 @@ export const useStore = create<AppState>()(
         if (!text) return;
 
         const occupied = occupiedCells(get().tasks);
-        const total = get().gridLayout === '8x4' ? 32 : get().gridLayout === '6x5' ? 30 : 24;
+        const total = getTotalCells(get().gridLayout);
         if (occupied + 1 > total) {
           get().addToast('Not enough grid space — free a cell first', '⚠');
           return;

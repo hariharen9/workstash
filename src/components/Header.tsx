@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Settings, Cloud } from 'lucide-react';
-import { useStore, type TopologyMode, occupiedCells } from '../store';
+import { useStore, type TopologyMode, occupiedCells, getTotalCells } from '../store';
 import { useAuth } from '../auth';
 import { GlowCard } from './GlowCard';
 import { playClick, playThemeToggle, playDefrag } from '../sounds';
@@ -174,7 +174,7 @@ export const Header: React.FC<{ onNewTask: () => void; onDefrag: () => void; onO
   const { mode, changeTopology, tasks, addToast, gridLayout, selectedTagFilter, setSelectedTagFilter, theme, toggleTheme, soundsEnabled } = useStore();
   const { user, signOut, openLoginModal } = useAuth();
 
-  const TOTAL_CELLS = gridLayout === '8x4' ? 32 : gridLayout === '6x5' ? 30 : 24;
+  const TOTAL_CELLS = getTotalCells(gridLayout);
 
   const used = occupiedCells(tasks);
   const capacityPct = Math.min(100, (used / TOTAL_CELLS) * 100);
@@ -281,9 +281,9 @@ export const Header: React.FC<{ onNewTask: () => void; onDefrag: () => void; onO
                 <p className="text-muted m-0 leading-snug">
                   Each block occupies <span className="text-text font-semibold">w × h cells</span> on the grid. The total varies by layout:
                 </p>
-                <div className="grid grid-cols-3 gap-1.5 mt-0.5">
-                  {(['6x4', '8x4', '6x5'] as const).map(l => {
-                    const total = l === '8x4' ? 32 : l === '6x5' ? 30 : 24;
+                <div className="grid grid-cols-4 gap-1.5 mt-0.5">
+                  {(['6x4', '8x4', '6x5', '8x5'] as const).map(l => {
+                    const total = getTotalCells(l);
                     const isCurrent = gridLayout === l;
                     return (
                       <div key={l} className={`text-center py-1.5 rounded-lg border text-[0.68rem] font-mono ${isCurrent ? 'bg-elevated border-faint text-text' : 'bg-void/40 border-line/50 text-faint'}`}>

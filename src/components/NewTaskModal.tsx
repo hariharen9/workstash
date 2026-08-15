@@ -23,6 +23,7 @@ import {
   defaultRecurrence,
   formatTag,
   getAllTags,
+  getTotalCells,
 } from '../store';
 import { GlowCard } from './GlowCard';
 import { playCreate, playError } from '../sounds';
@@ -106,7 +107,7 @@ const TIMER_PRESETS = [
 
 export const NewTaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const { addTile, addRecurringTile, tasks, addToast, gridLayout, soundsEnabled, userTags = [], rememberTag, forgetTag } = useStore();
-  const TOTAL_CELLS = gridLayout === '8x4' ? 32 : gridLayout === '6x5' ? 30 : 24;
+  const TOTAL_CELLS = getTotalCells(gridLayout);
 
   const [activeTab, setActiveTab] = useState<'standard' | 'recurring'>('standard');
   const [title, setTitle] = useState('');

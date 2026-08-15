@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { useStore, occupiedCells } from '../store';
+import { useStore, occupiedCells, getTotalCells } from '../store';
 import { GlowCard } from './GlowCard';
 import { playClick, playCreate, playArchive } from '../sounds';
 import { Inbox, Plus, ChevronDown, ChevronUp, ArrowUpRight, X, Sparkles } from 'lucide-react';
@@ -10,7 +10,7 @@ export const HoldingPenDock: React.FC = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [expanded, setExpanded] = useState(false);
 
-  const TOTAL_CELLS = gridLayout === '8x4' ? 32 : gridLayout === '6x5' ? 30 : 24;
+  const TOTAL_CELLS = getTotalCells(gridLayout);
   const used = occupiedCells(tasks);
   const isFull = used >= TOTAL_CELLS;
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useStore, occupiedCells, type GridLayout, type PersistedWorkspace } from '../store';
+import { useStore, occupiedCells, type GridLayout, type PersistedWorkspace, getTotalCells } from '../store';
 import { useAuth } from '../auth';
 import { GlowCard } from './GlowCard';
 import {
@@ -66,7 +66,7 @@ export const SettingsModal: React.FC<{ isOpen: boolean; onClose: () => void }> =
   const [deleteStep, setDeleteStep] = useState<1 | 2 | 3>(1);
   const [deleteChallengeInput, setDeleteChallengeInput] = useState('');
 
-  const TOTAL_CELLS = localLayout === '8x4' ? 32 : localLayout === '6x5' ? 30 : 24;
+  const TOTAL_CELLS = getTotalCells(localLayout);
   const used = occupiedCells(tasks);
 
   // Statistics
@@ -429,11 +429,12 @@ export const SettingsModal: React.FC<{ isOpen: boolean; onClose: () => void }> =
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                   {[
                     { id: '6x4' as GridLayout, name: 'Minimal Focus', cols: 6, rows: 4, total: 24, desc: 'Ultra-tight canvas. Best for strict deep work.' },
                     { id: '8x4' as GridLayout, name: 'Panoramic Wide', cols: 8, rows: 4, total: 32, desc: 'Expanded width. Ideal for multi-task workspaces.' },
                     { id: '6x5' as GridLayout, name: 'Tall Matrix', cols: 6, rows: 5, total: 30, desc: 'Balanced verticality. Great on high-res displays.' },
+                    { id: '8x5' as GridLayout, name: 'Studio Command', cols: 8, rows: 5, total: 40, desc: 'Expansive master canvas for complex multi-project workflows.' },
                   ].map((l) => {
                     const isSelected = localLayout === l.id;
                     return (
