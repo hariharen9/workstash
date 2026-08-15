@@ -2,7 +2,11 @@
 
 <br />
 
-# ⬛ WorkStash
+<a href="https://work-stash.netlify.app">
+  <img src="public/favicon.svg" alt="WorkStash Logo" width="92" height="92" />
+</a>
+
+# WorkStash
 
 ### **The spatial antidote to infinite to-do lists.**
 
