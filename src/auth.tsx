@@ -8,7 +8,7 @@ import {
   deleteUser,
   type User,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, deleteDoc, type DocumentReference } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc, type DocumentReference, type DocumentSnapshot } from 'firebase/firestore';
 import { auth, db, googleProvider } from './firebase';
 import {
   useStore,
@@ -94,6 +94,36 @@ function cleanForFirestore<T>(data: T): T {
   return JSON.parse(JSON.stringify(data));
 }
 
+// Resilient fetch with exponential backoff for transient IndexedDB/popup reconnections
+async function fetchDocWithRetry(ref: DocumentReference, attempts = 3): Promise<DocumentSnapshot> {
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await getDoc(ref);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const isTransient = msg.includes('closing') || msg.includes('closed') || msg.includes('hidden') || msg.includes('unavailable') || msg.includes('IndexedDB');
+      if (i === attempts - 1 || !isTransient) throw err;
+      await new Promise(r => setTimeout(r, 200 * (i + 1)));
+    }
+  }
+  return await getDoc(ref);
+}
+
+// Resilient save with exponential backoff
+async function saveDocWithRetry(ref: DocumentReference, data: unknown, attempts = 3): Promise<void> {
+  for (let i = 0; i < attempts; i++) {
+    try {
+      await setDoc(ref, cleanForFirestore(data));
+      return;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const isTransient = msg.includes('closing') || msg.includes('closed') || msg.includes('hidden') || msg.includes('unavailable') || msg.includes('IndexedDB');
+      if (i === attempts - 1 || !isTransient) throw err;
+      await new Promise(r => setTimeout(r, 200 * (i + 1)));
+    }
+  }
+}
+
 async function flushSave(workspaceRef: DocumentReference) {
   if (!allowSave) return;
 
@@ -103,7 +133,7 @@ async function flushSave(workspaceRef: DocumentReference) {
   // Pull the latest remote doc before writing so two open browsers don't
   // silently clobber each other's additions.
   try {
-    const remoteSnap = await getDoc(workspaceRef);
+    const remoteSnap = await fetchDocWithRetry(workspaceRef, 2);
     if (remoteSnap.exists()) {
       payload = mergeWorkspace(local, remoteSnap.data() as PersistedWorkspace);
     }
@@ -112,7 +142,7 @@ async function flushSave(workspaceRef: DocumentReference) {
   }
 
   try {
-    await setDoc(workspaceRef, cleanForFirestore(payload));
+    await saveDocWithRetry(workspaceRef, payload, 3);
     statusReporter('synced', '');
   } catch (err) {
     console.error('Failed to save cloud workspace:', err);
@@ -127,13 +157,13 @@ async function connectSync(uid: string, isRetry = false) {
 
   const workspaceRef = doc(db, 'users', uid, 'workspace', 'main');
   try {
-    const snap = await getDoc(workspaceRef);
+    const snap = await fetchDocWithRetry(workspaceRef, 3);
     if (snap.exists()) {
       if (isRetry && hadCloud) {
         // Merge offline edits with cloud instead of overwriting them.
         const merged = mergeWorkspace(getLocalWorkspace(), snap.data() as PersistedWorkspace);
         useStore.getState().hydrateCloudWorkspace(merged);
-        await setDoc(workspaceRef, cleanForFirestore(merged));
+        await saveDocWithRetry(workspaceRef, merged, 3);
       } else {
         useStore.getState().hydrateCloudWorkspace(snap.data() as PersistedWorkspace);
       }
@@ -141,14 +171,14 @@ async function connectSync(uid: string, isRetry = false) {
     } else if (isRetry && hadCloud) {
       const local = getLocalWorkspace();
       useStore.getState().hydrateCloudWorkspace(local);
-      await setDoc(workspaceRef, cleanForFirestore(local));
+      await saveDocWithRetry(workspaceRef, local, 3);
       cloudLoaded = true;
     } else {
       const local = getLocalWorkspace();
       const payload = local && local.tasks && local.tasks.length > 0 ? local : buildEmptyWorkspace();
       useStore.getState().hydrateCloudWorkspace(payload);
       try {
-        await setDoc(workspaceRef, cleanForFirestore(payload));
+        await saveDocWithRetry(workspaceRef, payload, 3);
       } catch (writeErr) {
         console.warn('Initial workspace upload failed; changes remain safely local:', writeErr);
       }

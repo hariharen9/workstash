@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { Settings, Cloud } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Settings, Cloud, LogOut, Sparkles, Calendar, ShieldCheck } from 'lucide-react';
 import { useStore, type TopologyMode, occupiedCells, getTotalCells } from '../store';
 import { useAuth } from '../auth';
 import { GlowCard } from './GlowCard';
@@ -174,6 +174,22 @@ const WorkspaceBloom: React.FC<{ items: BloomItem[]; isUrgent?: boolean }> = ({ 
 export const Header: React.FC<{ onNewTask: () => void; onDefrag: () => void; onOpenSettings: () => void; onOpenHelp: () => void; onOpenArchive: () => void; onOpenRhythm: () => void }> = ({ onNewTask, onDefrag, onOpenSettings, onOpenHelp, onOpenArchive, onOpenRhythm }) => {
   const { mode, changeTopology, tasks, addToast, gridLayout, selectedTagFilter, setSelectedTagFilter, theme, toggleTheme, soundsEnabled } = useStore();
   const { user, signOut, openLoginModal } = useAuth();
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setIsProfileOpen(false);
+      }
+    };
+    if (isProfileOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isProfileOpen]);
 
   const TOTAL_CELLS = getTotalCells(gridLayout);
 
@@ -409,23 +425,113 @@ export const Header: React.FC<{ onNewTask: () => void; onDefrag: () => void; onO
         </button>
 
         {user ? (
-          <div className="flex items-center gap-2 pl-2.5 ml-1 border-l border-line shrink-0">
-            <div className="w-7 h-7 rounded-full bg-violet/15 border border-violet/30 grid place-items-center text-violet text-[0.7rem] font-mono font-semibold uppercase shrink-0" title={user.displayName || user.email || undefined}>
-              {(user.displayName?.[0] || user.email?.[0] || '?').toUpperCase()}
-            </div>
+          <div className="relative pl-2 sm:pl-2.5 ml-0.5 sm:ml-1 border-l border-line shrink-0" ref={profileRef}>
             <button
               type="button"
-              className="tile-action !w-7 !h-7 hover:!text-danger"
-              title="Sign out"
-              onClick={() => signOut()}
-              aria-label="Sign out"
+              onClick={() => setIsProfileOpen((prev) => !prev)}
+              className="relative w-8 h-8 rounded-full border border-line hover:border-violet/60 transition-all cursor-pointer shadow-sm shrink-0 flex items-center justify-center overflow-hidden focus:outline-none focus:ring-2 focus:ring-violet/40 group"
+              title={user.displayName || user.email || 'Account'}
+              aria-expanded={isProfileOpen}
+              aria-label="User Account Menu"
             >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                <path d="M16 17l5-5-5-5" />
-                <path d="M21 12H9" />
-              </svg>
+              {user.photoURL ? (
+                <img
+                  src={user.photoURL}
+                  alt={user.displayName || 'Avatar'}
+                  className="w-full h-full object-cover rounded-full"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="w-full h-full bg-violet/15 grid place-items-center text-violet text-[0.72rem] font-mono font-bold uppercase group-hover:bg-violet/25 transition-colors">
+                  {(user.displayName?.[0] || user.email?.[0] || '?').toUpperCase()}
+                </div>
+              )}
+              {/* Online sync indicator badge */}
+              <span className="w-2.5 h-2.5 rounded-full bg-teal border-2 border-surface absolute bottom-0 right-0 shadow-sm" />
             </button>
+
+            {/* Profile Account Dropdown */}
+            {isProfileOpen && (
+              <div
+                className="absolute top-full right-0 mt-2.5 w-72 sm:w-80 bg-surface/95 backdrop-blur-xl border border-line rounded-2xl p-4 shadow-2xl z-50 animate-bloomPanelIn flex flex-col gap-3"
+                data-lenis-prevent="true"
+              >
+                {/* User Header */}
+                <div className="flex items-center gap-3 pb-3 border-b border-line">
+                  <div className="w-12 h-12 rounded-full border-2 border-line/80 overflow-hidden shrink-0 shadow-md">
+                    {user.photoURL ? (
+                      <img
+                        src={user.photoURL}
+                        alt={user.displayName || 'Avatar'}
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-violet/20 grid place-items-center text-violet text-lg font-mono font-bold uppercase">
+                        {(user.displayName?.[0] || user.email?.[0] || '?').toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-display font-bold text-text text-sm truncate m-0 leading-tight">
+                      {user.displayName || 'WorkStash User'}
+                    </p>
+                    <p className="text-muted text-[0.75rem] font-mono truncate m-0 mt-0.5" title={user.email || undefined}>
+                      {user.email || 'No email provided'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Account Details & Metadata */}
+                <div className="bg-void/40 rounded-xl p-2.5 border border-line/60 flex flex-col gap-2 text-[0.75rem]">
+                  <div className="flex items-center justify-between text-muted">
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <Sparkles size={12} className="text-violet" />
+                      Sync Status
+                    </span>
+                    <span className="flex items-center gap-1 text-teal font-medium font-mono text-[0.7rem]">
+                      <span className="w-1.5 h-1.5 rounded-full bg-teal animate-pulse" />
+                      Active Cloud Sync
+                    </span>
+                  </div>
+
+                  {user.metadata?.creationTime && (
+                    <div className="flex items-center justify-between text-muted">
+                      <span className="flex items-center gap-1.5 font-medium">
+                        <Calendar size={12} className="text-amber" />
+                        Member Since
+                      </span>
+                      <span className="text-text font-mono text-[0.7rem]">
+                        {new Date(user.metadata.creationTime).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between text-muted">
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <ShieldCheck size={12} className="text-teal" />
+                      Security
+                    </span>
+                    <span className="text-text font-mono text-[0.7rem]">
+                      Private UID Isolated
+                    </span>
+                  </div>
+                </div>
+
+                {/* Sign Out Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsProfileOpen(false);
+                    signOut();
+                  }}
+                  className="w-full py-2 px-3 rounded-xl bg-danger/10 hover:bg-danger/20 text-danger border border-danger/20 hover:border-danger/40 font-semibold text-[0.78rem] flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm mt-1"
+                >
+                  <LogOut size={14} />
+                  <span>Sign Out of WorkStash</span>
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <button

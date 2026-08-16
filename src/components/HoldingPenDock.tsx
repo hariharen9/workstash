@@ -9,6 +9,23 @@ export const HoldingPenDock: React.FC = () => {
   const pen = tasks.find(t => t.isPen && !t.completed);
   const inputRef = useRef<HTMLInputElement>(null);
   const [expanded, setExpanded] = useState(false);
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 5000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatDateTime = (d: Date) => {
+    const month = d.toLocaleDateString(undefined, { month: 'short' });
+    const day = d.getDate();
+    let hours = d.getHours();
+    const minutes = d.getMinutes().toString().padStart(2, '0');
+    const ampm = hours >= 12 ? 'pm' : 'am';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    return `${month} ${day} — ${hours}:${minutes}${ampm}`;
+  };
 
   const TOTAL_CELLS = getTotalCells(gridLayout);
   const used = occupiedCells(tasks);
@@ -52,9 +69,15 @@ export const HoldingPenDock: React.FC = () => {
   return (
     <aside 
       aria-label="Inbox quick capture"
-      className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 flex flex-col items-end max-w-[calc(100vw-2rem)]"
+      className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 flex flex-col items-end gap-1.5 max-w-[calc(100vw-2rem)] select-none"
       data-lenis-prevent="true"
     >
+      {/* ─── Live Date & Time Indicator ─── */}
+      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface/90 backdrop-blur-md border border-line/70 text-muted font-mono text-[0.68rem] tracking-tight shadow-sm shrink-0 pointer-events-none transition-all">
+        <span className="w-1.5 h-1.5 rounded-full bg-violet/80 animate-pulse" />
+        <span className="font-medium text-text/85 tabular-nums">{formatDateTime(now)}</span>
+      </div>
+
       {/* ─── Expanded Floating Drawer ─── */}
       {expanded ? (
         <GlowCard
