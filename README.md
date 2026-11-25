@@ -24,7 +24,7 @@
 <br />
 
 [**⚡ Live App**](https://work-stash.netlify.app) •
-[**Creator Portfolio**](https://hariharen.site) •
+[**Creator Portfolio**](https://hariharen.space) •
 [**Core Superpowers**](#-core-superpowers) •
 [**Keyboard Shortcuts**](#-keyboard-shortcuts) •
 [**Getting Started**](#-quick-start) •
@@ -188,6 +188,6 @@ Open **`http://localhost:5173`** in your browser.
 
 ## 👨‍💻 Creator & License
 
-Crafted with ❤️ by **[Hariharen](https://hariharen.site)**
+Crafted with ❤️ by **[Hariharen](https://hariharen.space)**
 
 Released under the **[MIT License](LICENSE)**. © 2026 WorkStash.

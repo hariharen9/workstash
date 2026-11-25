@@ -26,7 +26,7 @@ export const Footer: React.FC<{ onOpenPrivacy: () => void }> = ({ onOpenPrivacy 
           <Heart size={12} className="text-danger fill-danger animate-pulse mx-0.5" />
           <span>by</span>
           <a
-            href="https://hariharen.site"
+            href="https://hariharen.space"
             target="_blank"
             rel="noopener noreferrer"
             className="font-semibold text-text hover:text-violet underline decoration-line hover:decoration-violet underline-offset-4 transition-all flex items-center gap-1 ml-0.5 group"
